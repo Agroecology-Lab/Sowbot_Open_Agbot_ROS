@@ -9,12 +9,42 @@ RUN mkdir -p /root/.lizard && \
     wget https://github.com/zauberzeug/lizard/releases/download/${LATEST_VERSION}/lizard_firmware_and_devtools_${LATEST_VERSION}_esp32.zip && \
     unzip lizard_firmware_and_devtools_${LATEST_VERSION}_esp32.zip -d /root/.lizard && \
     rm -f lizard_firmware_and_devtools_${LATEST_VERSION}.zip
+    
+    
+    
 
-# Install all the dependencies
-RUN apt-get install -y \
+# Force HTTPS for Ubuntu mirrors
+RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|https://archive.ubuntu.com/ubuntu/|g' /etc/apt/sources.list
+# Install required utilities and update CA certificates
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gnupg2 \
+    lsb-release \
+    wget && \
+    update-ca-certificates
+# Remove duplicate ROS 2 sources to prevent warnings
+RUN rm -f /etc/apt/sources.list.d/ros2.sources
+# Add ROS 2 Humble repository explicitly with HTTPS
+RUN sh -c 'echo "deb [arch=$(dpkg --print-architecture)] https://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2.list'
+# Optional: install libvdpau1 first to avoid dependency issues
+
+# Optional: install libvdpau1 first to avoid dependency issues
+
+RUN apt-get update && apt-get install -y libvdpau1 || apt-get -f install -y
+
+
+
+
+
+# Install ROS 2 packages and utilities
+
+
+RUN apt-get install -y --no-install-recommends \
+-o Acquire::https::Verify-Peer=false
         ros-humble-domain-bridge \
         ros-humble-rmw-cyclonedds-cpp \
-        ros-humble-foxglove-bridge \
+        ros-humble-foxglove-bridge \ \
         ros-humble-xacro \
         ros-humble-rosbag2-storage-mcap \
         ros-humble-foxglove-msgs \
