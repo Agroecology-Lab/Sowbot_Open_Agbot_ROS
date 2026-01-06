@@ -1,6 +1,17 @@
 FROM ros:humble
 
-RUN apt-get update && apt-get install -y \
+# Download Lizard - this is split out to speed up the builds
+RUN apt-get update && apt-get install -y wget unzip
+
+RUN mkdir -p /root/.lizard && \
+    cd /root && \
+    LATEST_VERSION=$(curl -s https://api.github.com/repos/zauberzeug/lizard/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")') && \
+    wget https://github.com/zauberzeug/lizard/releases/download/${LATEST_VERSION}/lizard_firmware_and_devtools_${LATEST_VERSION}_esp32.zip && \
+    unzip lizard_firmware_and_devtools_${LATEST_VERSION}_esp32.zip -d /root/.lizard && \
+    rm -f lizard_firmware_and_devtools_${LATEST_VERSION}.zip
+
+# Install all the dependencies
+RUN apt-get install -y \
         ros-humble-domain-bridge \
         ros-humble-rmw-cyclonedds-cpp \
         ros-humble-foxglove-bridge \
@@ -21,27 +32,19 @@ RUN apt-get update && apt-get install -y \
         python3-yaml \
         git \
         nano \
-        wget \
-        unzip \
         iputils-ping
 
-# Setup lizard
-RUN mkdir -p /root/.lizard && \
-    cd /root && \
-    LATEST_VERSION=$(curl -s https://api.github.com/repos/zauberzeug/lizard/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")') && \
-    wget https://github.com/zauberzeug/lizard/releases/download/${LATEST_VERSION}/lizard_firmware_and_devtools_${LATEST_VERSION}.zip && \
-    unzip lizard_firmware_and_devtools_${LATEST_VERSION}.zip -d /root/.lizard && \
-    chmod +x /root/.lizard/espresso.py && \
+COPY ./docker/bashrc /root/.bashrc
+
+# Actually install Lizard
+RUN chmod +x /root/.lizard/espresso.py && \
     cd /root/.lizard && \
     pip install -r requirements.txt && \
     cd /root && \
-    rm -f lizard_firmware_and_devtools_${LATEST_VERSION}.zip && \
     echo "export PYTHONPATH=/root/.lizard:$PYTHONPATH" >> /root/.bashrc
 
-RUN pip install -r requirements-dev.txt
-
-COPY ./docker/bashrc /tmp/bashrc
-RUN cat /tmp/bashrc >> /root/.bashrc && rm -f /tmp/bashrc
+COPY requirements*.txt /root/
+RUN pip install -r /root/requirements-dev.txt
 
 # Copy ROS packages
 COPY ./basekit_driver /workspace/src/basekit_driver
@@ -53,5 +56,3 @@ WORKDIR /workspace
 RUN . /opt/ros/humble/setup.sh && \
     colcon build --packages-select basekit_driver basekit_launch basekit_ui --symlink-install && \
     . install/setup.sh
-
-WORKDIR /workspace
