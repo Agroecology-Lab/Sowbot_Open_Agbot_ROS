@@ -8,8 +8,8 @@ from launch_ros.actions import ComposableNodeContainer, Node
 from launch_ros.descriptions import ComposableNode
 
 
-def find_septentrio_port():
-    """Find the first available serial port that might be a Septentrio receiver."""
+def find_gnss_port():
+    """Find the first available serial port that might be a GNSS receiver."""
     patterns = [
         '/dev/ttyACM*',  # USB ACM devices
         '/dev/ttyUSB*',  # USB-Serial adapters
@@ -28,7 +28,7 @@ def find_septentrio_port():
 
 
 def generate_launch_description():
-    """Generate launch description for Septentrio GNSS receiver."""
+    """Generate launch description for U-blox F9P GNSS receiver using automatepro_gnss_driver."""
     # TF publishers for different frames
     tf_publishers = [
         Node(
@@ -46,7 +46,8 @@ def generate_launch_description():
     ]
 
     # Configuration file setup
-    default_file_name = 'gnss.yaml'
+    # Note: We keep the argument names similar but point to a default ublox config if available
+    default_file_name = 'ublox_f9p.yaml'
     name_arg_file_name = 'file_name'
     arg_file_name = DeclareLaunchArgument(
         name_arg_file_name,
@@ -64,21 +65,22 @@ def generate_launch_description():
     )
 
     # Find the serial port
-    serial_port = find_septentrio_port()
+    serial_port = find_gnss_port()
 
-    # Create a modified configuration that uses the detected serial port
-    # Note: Using 'serial://' prefix without a slash to avoid triple slash issue
+    # Create a modified configuration for automatepro_gnss_driver (ublox_gps)
     config = {
-        'device': 'serial://' + serial_port.lstrip('/'),  # Remove leading slash to avoid triple slash
-        'serial.baudrate': 921600,
-        'serial.hw_flow_control': 'off'
+        'device': serial_port,
+        'uart1.baudrate': 921600,
+        'frame_id': 'gnss',
+        'config_on_startup': False  # Recommended by Lemvos for pre-configured devices
     }
 
-    # Create the composable node
+    # Create the composable node for automatepro_gnss_driver
+    # Package: ublox_gps, Plugin: ublox_node::UbloxNode
     composable_node = ComposableNode(
-        name='septentrio_gnss_driver',
-        package='septentrio_gnss_driver',
-        plugin='rosaic_node::ROSaicNode',
+        name='ublox_gps_node',
+        package='ublox_gps',
+        plugin='ublox_node::UbloxNode',
         parameters=[
             LaunchConfiguration(name_arg_file_path),
             config
@@ -87,8 +89,8 @@ def generate_launch_description():
 
     # Create the container
     container = ComposableNodeContainer(
-        name='septentrio_gnss_driver_container',
-        namespace='septentrio_gnss_driver',
+        name='ublox_gps_container',
+        namespace='',
         package='rclcpp_components',
         executable='component_container_isolated',
         emulate_tty=True,
@@ -103,3 +105,5 @@ def generate_launch_description():
         container,
         *tf_publishers
     ])
+
+

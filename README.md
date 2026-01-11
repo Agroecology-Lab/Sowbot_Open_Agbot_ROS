@@ -9,6 +9,23 @@ BaseKit ROS is a comprehensive ROS2 package that handles the communication and c
 
 All launch files and configuration files (except for the UI) are stored in the `basekit_launch` package.
 
+## Open agbot 
+git clone https://github.com/Lemvos/automatepro_gnss_driver.git
+
+## Github setup on Linux
+sudo npm install --global yarn
+
+sudo apt-get install libgtk2.0-0 libgtk-3-0 libgbm-dev libnotify-dev libnss3 libxss1  libxtst6 xauth xvfb
+
+curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor | sudo tee /etc/apt/keyrings/yarn-archive-keyring.gpg > /dev/null
+echo "deb [signed-by=/etc/apt/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+
+curl https://gpg.polrivero.com/public.key | sudo gpg --dearmor -o /usr/share/keyrings/polrivero.gpg
+echo "deb [signed-by=/usr/share/keyrings/polrivero.gpg] https://deb.github-desktop.polrivero.com/ stable main" | sudo tee /etc/apt/sources.list.d/github-desktop-plus.list
+
+sudo apt update && sudo apt install yarn docker-desktop-plus
+
+
 ## Components
 
 ### Basekit driver
