@@ -1,92 +1,80 @@
-# BaseKit ROS
+# Open AgBot Devkit ROS
 
-BaseKit ROS is a comprehensive ROS2 package that handles the communication and configuration of various field friend components:
+This repository contains the ROS 2 workspace and Docker configuration for the Open AgBot development kit. This project is a fork of the original work by [Zauberzeug](https://github.com/zauberzeug) and has been optimized for agricultural robotics research using ROS 2 Humble.
 
-- Communication with Lizard (ESP32) to control the Field Friend
-- GNSS positioning system
-- Camera systems (USB and AXIS cameras)
-- Example UI to control the robot
+## Project Structure
 
-All launch files and configuration files (except for the UI) are stored in the `basekit_launch` package.
+The workspace is organized to manage hardware drivers, user interfaces, and system-wide launch configurations within a containerized environment.
 
-## Open agbot 
-git clone https://github.com/Lemvos/automatepro_gnss_driver.git
+* src/basekit_driver: Manages serial communication with the motor controller.
+* src/basekit_ui: A web-based dashboard for robot monitoring and control.
+* src/basekit_launch: Contains system-wide launch files and hardware configurations.
+* src/ublox: Integrated GNSS drivers for precise positioning.
 
-## Github setup on Linux
-```
-sudo npm install --global yarn
-```
-```
-sudo apt-get install libgtk2.0-0 libgtk-3-0 libgbm-dev libnotify-dev libnss3 libxss1  libxtst6 xauth xvfb
-```
-```
-curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor | sudo tee /etc/apt/keyrings/yarn-archive-keyring.gpg > /dev/null
-echo "deb [signed-by=/etc/apt/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-```
-```
-curl https://gpg.polrivero.com/public.key | sudo gpg --dearmor -o /usr/share/keyrings/polrivero.gpg
-echo "deb [signed-by=/usr/share/keyrings/polrivero.gpg] https://deb.github-desktop.polrivero.com/ stable main" | sudo tee /etc/apt/sources.list.d/github-desktop-plus.list
-```
-```
-sudo apt update && sudo apt install yarn docker-desktop-plus
-```
+## Prerequisites
+
+1. Ubuntu 22.04 LTS.
+2. Docker and Docker Compose.
+3. Git.
+
+## Installation and Setup
+
+1. Clone the repository to your local machine:
+   git clone https://github.com/Agroecology-Lab/Open_agbot_devkit_ros.git
+   cd Open_agbot_devkit_ros
+
+2. Initialize the workspace and build the containers:
+   python3 openagbotquick.py --clean
 
 ## Components
 
-### Basekit driver
-
-The BaseKit driver (based on [ATB Potsdam's field_friend_driver](https://github.com/ATB-potsdam-automation/field_friend_driver)) manages the communication with the ESP32 microcontroller running [Lizard](https://lizard.dev/) firmware - a domain-specific language for defining hardware behavior on embedded systems.
+### Basekit Driver
+The BaseKit driver is based on the ATB Potsdam field_friend_driver. It manages communication with an ESP32 microcontroller running Lizard firmware, a domain-specific language for defining hardware behavior on embedded systems.
 
 The package provides:
+* config/basekit.liz: Basic Lizard configuration for BaseKit robot.
+* config/basekit.yaml: Corresponding ROS 2 driver configuration.
 
-- `config/basekit.liz`: Basic Lizard configuration for BaseKit robot
-- `config/basekit.yaml`: Corresponding ROS2 driver configuration
-
-Available ROS2 topics:
-
-- `/cmd_vel` (geometry_msgs/Twist): Control robot movement
-- `/odom` (nav_msgs/Odometry): Robot odometry data
-- `/battery_state` (sensor_msgs/BatteryState): Battery status information
-- `/bumper_front_top_state` (std_msgs/Bool): Front top bumper state
-- `/bumper_front_bottom_state` (std_msgs/Bool): Front bottom bumper state
-- `/bumper_back_state` (std_msgs/Bool): Back bumper state
-- `/emergency_stop` (std_msgs/Bool): Software emergency stop control
-- `/estop1_state` (std_msgs/Bool): Hardware emergency stop 1 state
-- `/estop2_state` (std_msgs/Bool): Hardware emergency stop 2 state
-- `/configure` (std_msgs/Empty): Trigger loading of the Lizard configuration file
+Available ROS 2 topics:
+* /cmd_vel (geometry_msgs/Twist): Control robot movement.
+* /odom (nav_msgs/Odometry): Robot odometry data.
+* /battery_state (sensor_msgs/BatteryState): Battery status information.
+* /bumper_front_top_state (std_msgs/Bool): Front top bumper state.
+* /bumper_front_bottom_state (std_msgs/Bool): Front bottom bumper state.
+* /bumper_back_state (std_msgs/Bool): Back bumper state.
+* /emergency_stop (std_msgs/Bool): Software emergency stop control.
+* /estop1_state (std_msgs/Bool): Hardware emergency stop 1 state.
+* /estop2_state (std_msgs/Bool): Hardware emergency stop 2 state.
+* /configure (std_msgs/Empty): Trigger loading of the Lizard configuration file.
 
 ### Camera System
+The camera system supports both USB cameras and AXIS cameras, managed through a unified launch system in camera_system.launch.py.
 
-The camera system supports both USB cameras and AXIS cameras, managed through a unified launch system in `camera_system.launch.py` that handles USB cameras, AXIS cameras, and the Foxglove Bridge for remote viewing.
-
-The USB camera system provides video streaming through ROS2 topics using the `usb_cam` ROS2 package. Camera parameters can be configured through `config/camera.yaml`.
-
-The AXIS camera system integrates with the [ROS2 AXIS camera driver](https://github.com/ros-drivers/axis_camera/tree/humble-devel) to support multiple IP cameras with individual streams. Each camera can be configured through `config/axis_camera.yaml`, with credentials managed through `config/secrets.yaml` (template provided in `config/secrets.yaml.template`). The cameras' authentication mode (basic or digest) might need to be configured - see [AXIS Camera Authentication](#axis-camera-authentication) section for details.
-
-The visualization system integrates with [Foxglove Studio](https://foxglove.dev/) for remote camera viewing, supporting compressed image transport. The Foxglove Bridge is accessible via WebSocket connection on port 8765.
+* USB Cameras: Provides video streaming via the usb_cam ROS 2 package; configured through config/camera.yaml.
+* AXIS Cameras: Integrates with the ROS 2 AXIS camera driver; credentials managed through config/secrets.yaml.
+* Visualization: Integrates with Foxglove Studio for remote viewing. The Foxglove Bridge is accessible via WebSocket on port 8765.
 
 ### GNSS System
+The system supports high-precision positioning via Septentrio or u-blox F9P receivers. Driver selection is managed through config/gnss.yaml.
 
-The GNSS system uses the [Septentrio GNSS driver](https://github.com/septentrio-gnss/septentrio_gnss_driver) with the default `config/gnss.yaml` configuration. Available topics:
+#### Septentrio Integration
+Uses the Septentrio ROS 2 driver for industrial-grade positioning. Available topics:
+* /pvtgeodetic: Position, velocity, and time in geodetic coordinates.
+* /poscovgeodetic: Position covariance.
+* /atteuler: Attitude in Euler angles.
+* /gpsfix: Detailed GPS fix information.
+* /aimplusstatus: AIM+ interference monitoring status.
 
-- `/pvtgeodetic`: Position, velocity, and time in geodetic coordinates
-- `/poscovgeodetic`: Position covariance in geodetic coordinates
-- `/velcovgeodetic`: Velocity covariance in geodetic coordinates
-- `/atteuler`: Attitude in Euler angles
-- `/attcoveuler`: Attitude covariance
-- `/gpsfix`: Detailed GPS fix information including satellites and quality
-- `/aimplusstatus`: AIM+ status information
+#### u-blox F9P Integration
+Supports the ZED-F9P module for cost-effective RTK positioning.
+* Provides NMEA messages and UBX protocol support.
+* Supports NTRIP clients for achieving RTK-Fixed status.
+* Configuration is managed via ublox_gps node parameters.
 
 ### Basekit UI
+The example UI provides a robot control interface built with NiceGUI. It features a joystick control interface for movement, real-time GNSS data visualization, and safety system monitoring (bumpers and e-stops).
 
-The example UI provides a robot control interface built with NiceGUI, featuring a joystick control similar to turtlesim. It gives you access to and visualization of all topics made available by the BaseKit driver, including:
-
-- Robot movement control through a joystick interface
-- Real-time visualization of GNSS data
-- Monitoring of safety systems (bumpers, emergency stops)
-- Software emergency stop control
-
-The interface is accessible through a web browser at `http://<ROBOT-IP>:80` when the robot is running.
+The interface is accessible via web browser at http://localhost:8080.
 
 <div align="center">
   <img src="assets/BasekitUI.png" alt="Example UI Screenshot" width="500"/>
@@ -94,6 +82,52 @@ The interface is accessible through a web browser at `http://<ROBOT-IP>:80` when
     Example UI: Control, data, safety, and GPS map in one interface.
   </div>
 </div>
+
+## Docker Setup
+
+The system runs entirely within Docker to ensure environment consistency across different hardware platforms.
+
+* The basekit service uses a Dockerfile that installs ROS 2 Humble and necessary Python dependencies (NiceGUI, pyserial).
+* Volume mapping links the local src/ directory to /workspace/src inside the container, enabling real-time code development.
+
+To restart the system after making changes to the code:
+python3 openagbotquick.py --clean
+
+## Hardware Configuration
+
+Port mappings for serial devices are defined in docker/docker-compose.yml. Common mappings include:
+* Controller Port: /dev/ttyACM0 or /dev/ttyTHS0.
+* GPS Port: /dev/ttyACM1.
+
+Ensure your user has dialout permissions on the host machine to allow the container access to these ports.
+
+## License
+
+Refer to the LICENSE file for details on usage and distribution rights.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Docker Setup
 
