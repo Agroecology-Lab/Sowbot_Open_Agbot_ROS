@@ -1,31 +1,40 @@
 services:
   basekit:
+    container_name: open_agbot_basekit
+    image: agroecology/open_agbot:latest
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: agroecology/open_agbot:latest
-    container_name: open_agbot_basekit
-    privileged: true
+    restart: always
     network_mode: host
-    restart: unless-stopped
-    
-    # Allows the container to access serial ports
-    group_add:
-      - dialout
-
-    # Mapping ports with environment overrides
-    # For ThinkPad, we set these in simple.py or a .env file
-    devices:
-      - "${CONTROLLER_PORT:-/dev/ttyTHS0}:/dev/ttyTHS0"
-      - "${GPS_PORT:-/dev/ttyS31}:/dev/ttyACM1"
-
+    ipc: host
+    privileged: true
     volumes:
-      - /dev:/dev
-      # Mount the local config so changes on the host reflect in the container
-      - ./src:/workspace/src
-
+      # Mount the source code for live development
+      - ../:/workspace
+      # Prevent the container from writing root-owned files to your host's 
+      # build/install folders by using named volumes (Optional but cleaner)
+      # - build_data:/workspace/build
+      # - install_data:/workspace/install
     environment:
-      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - DISPLAY=${DISPLAY}
+      - ROS_DOMAIN_ID=0
       - PYTHONUNBUFFERED=1
-      # Default to laptop mode if not specified
-      - HW_PLATFORM=${HW_PLATFORM:-laptop}
+    devices:
+      - /dev/ttyACM0:/dev/ttyACM0
+      - /dev/ttyACM1:/dev/ttyACM1
+    # This command checks if the build exists before launching
+    command: >
+      /bin/bash -c "
+      source /opt/ros/humble/setup.bash &&
+      if [ ! -f '/workspace/install/setup.bash' ]; then
+        echo '🛑 Brain (install folder) not found! You must run the build script first.';
+        sleep infinity;
+      else
+        source /workspace/install/setup.bash &&
+        ros2 launch basekit_launch basekit.launch.py
+      fi"
+
+# volumes:
+#   build_data:
+#   install_data:
