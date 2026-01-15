@@ -1,19 +1,16 @@
-import os, subprocess, sys, shutil, socket
+import os, subprocess, sys, socket, webbrowser, time, shutil
 
 # --- CONFIGURATION ---
 REPO_URL = "https://github.com/Agroecology-Lab/Open_agbot_devkit_ros.git"
-GNSS_REPO_URL = "https://github.com/Lemvos/automatepro_gnss_driver"
+GNSS_REPO_URL = "https://github.com/KumarRobotics/ublox.git -b ros2"
 TARGET_DIR = os.path.expanduser("~/open_agbot_ws")
-DOCKER_DIR = os.path.join(TARGET_DIR, "docker")
-DOCKERFILE_PATH = os.path.join(DOCKER_DIR, "Dockerfile")
+SRC_DIR = os.path.join(TARGET_DIR, "src")
 
 def get_ip():
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.settimeout(0)
-        s.connect(('10.254.254.254', 1))
-        ip = s.getsockname()[0]
-        s.close()
+        s.settimeout(0); s.connect(('10.254.254.254', 1))
+        ip = s.getsockname()[0]; s.close()
         return ip
     except Exception: return "127.0.0.1"
 
@@ -21,86 +18,106 @@ def run_cmd(cmd, description):
     print(f"\n[🚀] {description}...")
     process = subprocess.Popen(cmd, shell=True)
     process.communicate()
-    if process.returncode != 0:
-        print(f"\n[❌] STOPPING: {description} failed."); sys.exit(1)
+    return process.returncode == 0
+
+def setup_docker_env():
+    if not shutil.which("docker"):
+        print("[🐳] Docker not found. Installing...")
+        run_cmd("curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh", "Installing Docker")
+        run_cmd("sudo usermod -aG docker $USER", "Adding user to Docker group")
+    
+    check_portainer = subprocess.run("docker ps -a --filter name=portainer -q", shell=True, capture_output=True)
+    if not check_portainer.stdout:
+        print("[📊] Portainer not found. Setting up...")
+        run_cmd("docker volume create portainer_data", "Creating Portainer Volume")
+        run_cmd("docker run -d -p 9000:9000 --name portainer --restart always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:latest", "Launching Portainer")
 
 def main():
     local_ip = get_ip()
-    print(f"=== Open-AgBot Setup: Symlink Collision Fix ===")
+    setup_docker_env()
+    
+    # Hardware Permissions
+    print("\n[🔓] Setting hardware permissions...")
+    subprocess.run("sudo usermod -aG dialout $USER", shell=True)
+    subprocess.run("sudo chmod 666 /dev/ttyUSB* /dev/video* 2>/dev/null || true", shell=True)
 
-    if not os.path.exists(TARGET_DIR):
-        run_cmd(f"git clone {REPO_URL} {TARGET_DIR}", "Cloning Base Repository")
+    # Workspace Setup
+    if not os.path.exists(SRC_DIR):
+        os.makedirs(SRC_DIR)
+    
+    os.chdir(SRC_DIR)
+    if not os.path.exists("Open_agbot_devkit_ros"):
+        run_cmd(f"git clone {REPO_URL}", "Cloning AgBot")
+    if not os.path.exists("ublox"):
+        run_cmd(f"git clone {GNSS_REPO_URL}", "Cloning Ublox")
+
     os.chdir(TARGET_DIR)
+    os.makedirs("docker", exist_ok=True)
 
-    gnss_path = os.path.join(TARGET_DIR, "automatepro_gnss_driver")
-    if not os.path.exists(gnss_path):
-        run_cmd(f"git clone {GNSS_REPO_URL} {gnss_path}", "Cloning GNSS Driver")
+    # --- THE "FORCE-INSTALL" DOCKERFILE ---
+    with open("docker/Dockerfile", "w") as f:
+        f.write(r"""FROM ros:humble-ros-base
 
-    os.makedirs(DOCKER_DIR, exist_ok=True)
+RUN echo 'Acquire::http::Pipeline-Depth "0";' > /etc/apt/apt.conf.d/99-no-pipeline && \
+    echo 'Acquire::Retries "100";' >> /etc/apt/apt.conf.d/80-retries
 
-    with open(DOCKERFILE_PATH, "w") as f:
-        f.write(r"""FROM ros:humble
-
-# 1. System Essentials
-RUN apt-get update && apt-get install -y \
-    wget unzip curl git python3-pip libasio-dev python3-serial && \
-    rm -rf /var/lib/apt/lists/*
-
-# 2. Lizard Firmware
-RUN mkdir -p /root/.lizard && cd /root && \
-    LATEST_VERSION=$(curl -s https://api.github.com/repos/zauberzeug/lizard/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")') && \
-    wget https://github.com/zauberzeug/lizard/releases/download/${LATEST_VERSION}/lizard_firmware_and_devtools_${LATEST_VERSION}_esp32.zip && \
-    unzip lizard_firmware_and_devtools_${LATEST_VERSION}_esp32.zip -d /root/.lizard && \
-    rm -f *.zip
-
-# 3. Python Stack
-RUN pip install --upgrade pip
-RUN pip install nicegui pyserial requests pyyaml
-
-# 4. ROS Dependencies
-RUN rosdep update --include-eol-distros || true
-
-# 5. Copy Source
-WORKDIR /workspace
-COPY ./basekit_driver ./src/basekit_driver
-COPY ./basekit_launch ./src/basekit_launch
-COPY ./basekit_ui ./src/basekit_ui
-COPY ./automatepro_gnss_driver ./src/automatepro_gnss_driver
-
-# 6. Rosdep
 RUN apt-get update && \
-    rosdep install --from-paths src --ignore-src -y --rosdistro humble \
-    --skip-keys="pyserial nicegui"
+    for i in {1..10}; do \
+    apt-get install -y --no-install-recommends --fix-missing \
+    python3-pip libasio-dev ros-humble-usb-cam \
+    ros-humble-nmea-msgs ros-humble-rtcm-msgs ros-humble-xacro \
+    ros-humble-diagnostic-updater && \
+    break || (echo "Retrying install in 5s..." && sleep 5); \
+    done && rm -rf /var/lib/apt/lists/*
 
-# 7. CLEAN WATERFALL BUILD
-# Added --symlink-install to EVERY step to prevent collision
-# Added rm -rf build/ install/ to ensure clean workspace
+RUN pip3 install --no-cache-dir nicegui pyserial
+
+WORKDIR /workspace
+COPY ./src ./src
+
 RUN . /opt/ros/humble/setup.sh && \
-    rm -rf build/ install/ && \
-    colcon build --symlink-install --packages-select ublox_serialization --parallel-workers 1 && \
-    colcon build --symlink-install --packages-select ublox_msgs --parallel-workers 1 && \
-    colcon build --symlink-install --parallel-workers 2
+    colcon build --symlink-install --parallel-workers 1
+
+ENTRYPOINT ["/bin/bash", "-c", "source /opt/ros/humble/setup.sh && source /workspace/install/setup.bash && ros2 launch basekit_launch robot.launch.py"]
 """)
 
-    with open("docker-compose.yml", "w") as f:
-        f.write("""
+    # Build & Deploy
+    if run_cmd("docker build --network=host -t open-agbot-image -f docker/Dockerfile .", "Building AgBot Image"):
+        with open("docker-compose.yml", "w") as f:
+            f.write(f"""
 services:
   open-agbot:
-    build: { context: ., dockerfile: docker/Dockerfile }
+    image: open-agbot-image
     container_name: open-agbot-main
     privileged: true
     network_mode: host
     restart: always
+    volumes:
+      - /dev:/dev
+    environment:
+      - PYTHONUNBUFFERED=1
 """)
-
-    run_cmd("docker compose build", "Executing Clean Waterfall Build")
-    run_cmd("docker compose up -d", "Launching AgBot")
-
-    print(f"\n" + "="*50)
-    print(f"✨ SUCCESS! EVERYTHING BUILT AND RUNNING")
-    print(f"📍 UI: http://{local_ip}:8080")
-    print(f"📍 Management: https://{local_ip}:9443")
-    print(f"="*50)
+        run_cmd("docker compose up -d --force-recreate", "Launching AgBot")
+        
+        # --- SUCCESS FEEDBACK ---
+        print("\n" + "="*60)
+        print(r"""
+  ____                      _             ____            _   
+ / __ \                    / \     __ _  | __ )   ___    | |_ 
+| |  | |_ __   ___ _ __   / _ \   / _` | |  _ \  / _ \   | __|
+| |  | | '_ \ / _ \ '_ \ / ___ \ | (_| | | |_) | | (_) | | |_ 
+ \____/| .__/ \___|_| |_/_/   \_\ \__, | |____/   \___/   \__|
+       | |                        |___/                       
+       |_|            🚀 LIVES!           
+        """)
+        print("="*60)
+        print(f"✨ AG-BOT UI:    http://{local_ip}:8080")
+        print(f"📊 PORTAINER:    http://{local_ip}:9000")
+        print(f"📜 LOGS:         docker logs -f open-agbot-main")
+        print("="*60)
+        
+        time.sleep(2)
+        webbrowser.open(f"http://{local_ip}:8080")
 
 if __name__ == "__main__":
     main()
