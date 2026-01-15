@@ -1,8 +1,8 @@
 services:
   basekit:
     build:
-      context: ../../../
-      dockerfile: src/Open_agbot_devkit_ros/docker/Dockerfile
+      context: .
+      dockerfile: docker/Dockerfile
     image: agroecology/open_agbot:latest
     container_name: open_agbot_basekit
     privileged: true
@@ -22,7 +22,7 @@ services:
     volumes:
       - /dev:/dev
       # Mount the local config so changes on the host reflect in the container
-      - ../basekit_launch/config:/workspace/install/basekit_launch/share/basekit_launch/config
+      - ./src:/workspace/src
 
     environment:
       - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
