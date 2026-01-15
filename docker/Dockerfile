@@ -1,60 +1,60 @@
-# 1. Base Image
+# Use the official ROS 2 Humble base
 FROM ros:humble-ros-base
 
-# 2. Environment & Resilience Setup
+# 1. Setup Environment & Mirrors
 ENV DEBIAN_FRONTEND=noninteractive
-ENV VIRTUAL_ENV=/opt/agbot_venv
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-ENV PYTHONPATH="/root/.lizard:$PYTHONPATH"
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV PYTHONPATH="/root/.lizard"
 
-# Prevent 400 Bad Request / Connection timeouts
-RUN echo 'Acquire::http::Pipeline-Depth "0"; Acquire::Retries "100";' > /etc/apt/apt.conf.d/99-resilience
+# 2. Hardening Apt & Installing Base Tools
+# We switch to the Azure mirror for better reliability during ROS buildfarm syncs
+RUN sed -i 's/archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
+    wget curl ca-certificates unzip git nano python3-pip software-properties-common && \
+    add-apt-repository universe && \
+    apt-get update
 
-# 3. System Dependencies (The "Nuclear" Loop)
-# We install curl/wget/ca-certificates first so the Lizard download doesn't fail
-RUN apt-get update && \
-    for i in {1..10}; do \
+# 3. Robust Dependency Management
+# We split the install to ensure that if a ROS mirror is syncing, 
+# we can retry specific packages without failing the whole build.
+RUN for i in {1..5}; do apt-get update && break || sleep 5; done && \
     apt-get install -y --no-install-recommends \
-    curl wget ca-certificates \
-    python3-pip python3-venv libasio-dev unzip git nano \
+    # Hardware Communication
+    python3-serial udev libasio-dev \
+    # ROS Build Tools
+    python3-colcon-common-extensions \
+    # Required ROS 2 Humble Packages
     ros-humble-usb-cam \
     ros-humble-xacro \
     ros-humble-nmea-msgs \
-    ros-humble-rtcm-msgs \
-    ros-humble-diagnostic-updater \
+    ros-humble-joint-state-publisher \
+    ros-humble-robot-state-publisher \
+    ros-humble-controller-manager \
+    ros-humble-diff-drive-controller \
     ros-humble-twist-mux \
+    # Middleware (CycloneDDS & Iceoryx)
     ros-humble-rmw-cyclonedds-cpp \
-    ros-humble-domain-bridge \
-    ros-humble-tf-transformations \
-    ros-humble-image-transport \
-    ros-humble-compressed-image-transport && \
-    break || (echo "Retry apt... $i" && sleep 5); \
-    done && rm -rf /var/lib/apt/lists/*
+    iceoryx-binding-c iceoryx-hoofs iceoryx-posh && \
+    rm -rf /var/lib/apt/lists/*
 
-# 4. Lizard Espresso Integration
-# Uses the tools installed above to fetch firmware and devtools
+# 4. Lizard Espresso Firmware & Devtools
+# Instead of a static link, this fetches the latest version dynamically
 RUN mkdir -p /root/.lizard && cd /root && \
-    LATEST=$(curl -s https://api.github.com/repos/zauberzeug/lizard/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")') && \
-    wget -q https://github.com/zauberzeug/lizard/releases/download/${LATEST}/lizard_firmware_and_devtools_${LATEST}_esp32.zip && \
-    unzip -q *.zip -d /root/.lizard && rm *.zip && \
+    LATEST_TAG=$(curl -s https://api.github.com/repos/zauberzeug/lizard/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")') && \
+    wget -O lizard.zip "https://github.com/zauberzeug/lizard/releases/download/${LATEST_TAG}/lizard_firmware_and_devtools_${LATEST_TAG}_esp32.zip" && \
+    unzip -o lizard.zip -d /root/.lizard && rm lizard.zip && \
     chmod +x /root/.lizard/espresso.py
 
-# 5. Python Virtual Env (The "Clean" Way)
-RUN python3 -m venv $VIRTUAL_ENV && \
-    pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir nicegui pyserial lizard-lib requests pyyaml
+# 5. Core Python Dependencies (NiceGUI / AgBot Stack)
+RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip3 install --no-cache-dir nicegui pyserial requests pyyaml
 
-# 6. Interactive Shell Customization
-RUN echo "source /opt/ros/humble/setup.bash" >> /root/.bashrc && \
-    echo "source $VIRTUAL_ENV/bin/activate" >> /root/.bashrc && \
-    echo "export PYTHONPATH=/root/.lizard:\$PYTHONPATH" >> /root/.bashrc
-
-# 7. Workspace Build (Sequential for Ublox Stability)
+# 6. Workspace Setup
 WORKDIR /workspace
+# Copy the source code from the local context
 COPY ./src ./src
 
-# Build sequence: Ublox Headers -> Ublox Msgs -> Everything else
+# Build the workspace using a staged approach to handle ublox dependencies
 RUN . /opt/ros/humble/setup.sh && \
     colcon build --symlink-install --packages-select ublox_serialization && \
     . install/setup.sh && \
@@ -62,6 +62,9 @@ RUN . /opt/ros/humble/setup.sh && \
     . install/setup.sh && \
     colcon build --symlink-install --parallel-workers 1
 
-# Note: Entrypoint is omitted here if you use the 'command:' override in 
-# your docker-compose.yml, but included for standalone safety:
-ENTRYPOINT ["/bin/bash", "-c", "source /opt/ros/humble/setup.sh && source $VIRTUAL_ENV/bin/activate && source install/setup.bash && ros2 launch basekit_launch basekit.launch.py"]
+# 7. Environment Sourcing
+RUN echo "source /opt/ros/humble/setup.bash" >> /root/.bashrc && \
+    echo "source /workspace/install/setup.bash" >> /root/.bashrc
+
+# 8. Entrypoint
+ENTRYPOINT ["/bin/bash", "-c", "source /opt/ros/humble/setup.sh && source install/setup.bash && ros2 launch basekit_launch basekit.launch.py"]
