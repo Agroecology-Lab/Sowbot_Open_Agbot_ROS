@@ -1,103 +1,61 @@
 /**:
   ros__parameters:
-    ## Sensor standard deviation [x,y,z] (optional)
-    ## This value is used to override the covariance matrix in nav_msgs/Odometry
-    ## Important: Make sure the values provided are in decimal points, or else might give error in execution
-    pose_stddev: [0.1, 0.1, 0.0, 0.0, 0.0, 0.1] # [m]
-    twist_stddev: [0.01, 0.0, 0.0, 0.0, 0.0, 0.01] # [m/s]
-    publish_tf: False
-    expander_name: "p0" # Name of the expander in the lizard configuration
-    flash_parameters: "-j orin --nand" # Parameters for espresso.py (e.g., "-j orin --nand" for "flash.py orin nand v05")
-    serial_port: "/dev/ttyTHS0" # This needs to be in the docker-compose.yml file as well
-    enable_esp_on_startup: True # Set to false to prevent ESP from being enabled at startup
+    use_axis_camera: false # DISABLED to prevent ThinkPad crash
+    hw_platform: "laptop"  # Helps driver skip Jetson-specific GPIO
 
-    ## This section maps Lizard's core output to ROS parameters.
-    ## Each entry in the list corresponds to a value that can be read from the Lizard core module.
-    ## Types and default values are specified for each data point below.
-    read_data:
-      list:
-        - time
-        - linear_speed
-        - angular_speed
-        - l0_error_flag
-        - r0_error_flag
-        - l1_error_flag
-        - r1_error_flag
-        - estop1_active # this name is to be used in the UI
-        - estop2_active # this name is to be used in the UI
-        - battery_status_level
-        - bumper_front_top_active # this name is to be used in the UI
-        - bumper_front_bottom_active # this name is to be used in the UI
-        - bumper_back_active # this name is to be used in the UI
-        - imu_cal_gyr
-        - imu_quat_w
-        - imu_quat_x
-        - imu_quat_y
-        - imu_quat_z
-        - rdyp_level
-        - vdp_level
-        - heap
+# ESP32 / Lizard Driver Node
+controller:
+  ros__parameters:
+    # --- THINKPAD FIX ---
+    port: "/dev/ttyACM0" 
+    baudrate: 115200
+    
+    # --- IMPORTANT: KEEP THESE ---
+    use_lizard: true
+    robot_type: "lizard"
+    publish_tf: true
+    base_frame: "base_link"
+    odom_frame: "odom"
 
-      time:
-        type: int
-        default: 0
-      linear_speed:
-        type: double
-        default: 0.0
-      angular_speed:
-        type: double
-        default: 0.0
-      l0_error_flag:
-        type: int
-        default: 0
-      r0_error_flag:
-        type: int
-        default: 0
-      l1_error_flag:
-        type: int
-        default: 0
-      r1_error_flag:
-        type: int
-        default: 0
-      estop1_active:
-        type: bool
-        default: False
-      estop2_active:
-        type: bool
-        default: False
-      battery_status_level:
-        type: int
-        default: 0
-      bumper_front_top_active:
-        type: bool
-        default: False
-      bumper_front_bottom_active:
-        type: bool
-        default: False
-      bumper_back_active:
-        type: bool
-        default: False
-      imu_cal_gyr:
-        type: int
-        default: 0
-      imu_quat_w:
-        type: double
-        default: 0.0
-      imu_quat_x:
-        type: double
-        default: 0.0
-      imu_quat_y:
-        type: double
-        default: 0.0
-      imu_quat_z:
-        type: double
-        default: 0.0
-      rdyp_level:
-        type: int
-        default: 0
-      vdp_level:
-        type: int
-        default: 0
-      heap:
-        type: int
-        default: 0
+# U-blox GPS Node
+ublox_gps_node:
+  ros__parameters:
+    # --- THINKPAD FIX ---
+    device: "/dev/ttyACM1"
+    
+    # --- IMPORTANT: KEEP THESE FOR RTK ---
+    uart1:
+      baudrate: 460800
+    frame_id: "gps"
+    gnss:
+      gps: true
+      glonass: true
+      galileo: true
+      beidou: true
+    inf:
+      all: true # Log all info for debugging RTK fix
+    publish:
+      all: true
+      nav:
+        pvt: true
+        sat: true
+    # Accuracy settings
+    meas: 5
+    dgnss_mode: 3 # RTK Fixed/Float mode
+
+# Web UI
+web_ui:
+  ros__parameters:
+    host: "0.0.0.0"
+    port: 8080
+
+# Static transforms (Required for Navigation stack)
+tf_base_link_imu:
+  ros__parameters:
+    translation: [0.0, 0.0, 0.0]
+    rotation: [0.0, 0.0, 0.0, 1.0]
+
+tf_imu_gnss:
+  ros__parameters:
+    translation: [0.0, 0.0, 0.0]
+    rotation: [0.0, 0.0, 0.0, 1.0]
