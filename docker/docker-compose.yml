@@ -1,7 +1,7 @@
 services:
   basekit:
     build:
-      context: .
+      context: ..
       dockerfile: docker/Dockerfile
     image: agroecology/open_agbot:latest
     container_name: open_agbot_basekit
