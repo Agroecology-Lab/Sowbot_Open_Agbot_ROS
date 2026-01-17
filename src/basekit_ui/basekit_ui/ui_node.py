@@ -42,7 +42,7 @@ class NiceGuiNode(Node):
         self.timer = self.create_timer(2.0, self.update_gps_ui)
         self.estop_active = False
 
-        with ui.context.client:
+        if True: # Patched
             with ui.row().classes('items-stretch w-[48rem] gap-3'):  # Add gap between items
                 with ui.card().classes('flex-1 text-center items-center'):  # Use flex-1 for equal width distribution
                     ui.label('Control').classes('text-2xl')

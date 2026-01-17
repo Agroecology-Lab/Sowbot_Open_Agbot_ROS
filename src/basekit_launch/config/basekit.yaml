@@ -1,68 +1,81 @@
 /**:
   ros__parameters:
-    hw_platform: "laptop"
+    hw_platform: laptop
     use_axis_camera: false
-
 controller:
   ros__parameters:
-    # UPDATED: Matches your Espressif device
-    serial_port: "/dev/ttyACM0"
+    base_frame: base_link
     baudrate: 115200
-    base_frame: "base_link"
-    odom_frame: "odom"
+    odom_frame: odom
     publish_tf: true
-    robot_type: "lizard"
-    use_lizard: true
     read_data:
       list:
-        - "v_batt"
-        - "motor_status"
-      v_batt:
-        default: 0.0
-        type: "double"
+      - v_batt
+      - motor_status
       motor_status:
         default: 0
-        type: "int"
-
+        type: int
+      v_batt:
+        default: 0.0
+        type: double
+    robot_type: lizard
+    serial_port: /dev/ttyACM0
+    use_lizard: true
+tf_base_link_imu:
+  ros__parameters:
+    rotation:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    translation:
+    - 0.0
+    - 0.0
+    - 0.0
+tf_imu_gnss:
+  ros__parameters:
+    rotation:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    translation:
+    - 0.0
+    - 0.0
+    - 0.0
+tf_imu_vsm:
+  ros__parameters:
+    rotation:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    translation:
+    - 0.0
+    - 0.0
+    - 0.0
 ublox_gps_node:
   ros__parameters:
-    # UPDATED: Matches your u-blox device
-    device: "/dev/ttyACM1"
-    frame_id: "gps"
     baudrate: 460800
-    uart1:
-      baudrate: 460800
-    meas: 5
+    device: /dev/ttyACM1
     dgnss_mode: 3
+    frame_id: gps
+    gnss:
+      beidou: true
+      galileo: true
+      glonass: true
+      gps: true
     inf:
       all: true
+    meas: 5
     publish:
       all: true
       nav:
         pvt: true
         sat: true
-    gnss:
-      gps: true
-      glonass: true
-      beidou: true
-      galileo: true
-
+    uart1:
+      baudrate: 460800
 web_ui:
   ros__parameters:
-    host: "0.0.0.0"
+    host: 0.0.0.0
     port: 8080
-
-tf_base_link_imu:
-  ros__parameters:
-    translation: [0.0, 0.0, 0.0]
-    rotation: [0.0, 0.0, 0.0, 1.0]
-
-tf_imu_gnss:
-  ros__parameters:
-    translation: [0.0, 0.0, 0.0]
-    rotation: [0.0, 0.0, 0.0, 1.0]
-
-tf_imu_vsm:
-  ros__parameters:
-    translation: [0.0, 0.0, 0.0]
-    rotation: [0.0, 0.0, 0.0, 1.0]

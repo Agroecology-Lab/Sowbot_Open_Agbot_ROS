@@ -18,11 +18,26 @@ class DataOdom:
         self._odom.header.frame_id = 'odom'
         self._odom.child_frame_id = 'base_link'
         # Fixed by fix.py: Ensure 6x6 matrix (36 elements)
-        cov_list = list(covariance_pose)
-        self._odom.pose.covariance = cov_list + [0.0] * (36 - len(cov_list))
+        
+        # Strict float64 casting for ROS 2 compatibility
+        raw_cov = list(covariance_pose) + [0.0] * (36 - len(list(covariance_pose)))
+        import numpy as np
+        raw_cov = list(covariance_pose) + [0.0] * (36 - len(list(covariance_pose)))
+        import numpy as np
+        c = np.zeros(36, dtype=np.float64)
+        val = np.array(covariance_pose).flatten()
+        c[:min(len(val), 36)] = val[:36]
+        self._odom.pose.covariance = c
+    
         # Fixed by fix.py: Ensure 6x6 matrix (36 elements)
         twist_list = list(covariance_twist)
-        self._odom.twist.covariance = twist_list + [0.0] * (36 - len(twist_list))
+        import numpy as np
+        raw_twist = list(covariance_twist) + [0.0] * (36 - len(list(covariance_twist)))
+        import numpy as np
+        c = np.zeros(36, dtype=np.float64)
+        val = np.array(covariance_pose).flatten()
+        c[:min(len(val), 36)] = val[:36]
+        self._odom.pose.covariance = c
         self._last_time = None
 
     def update_data(self, current_time: Time, linear_speed: float, angular_speed: float):
