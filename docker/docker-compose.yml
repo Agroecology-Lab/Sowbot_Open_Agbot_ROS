@@ -1,46 +1,26 @@
-version: '3.8'
-
 services:
   basekit:
     image: openagbot-basekit:latest
     container_name: basekit_dev
-    # Network mode host is required for ROS 2 DDS discovery between host/container
     network_mode: host
     privileged: true
-    
-    # Dynamically maps to your host user to prevent Permission Denied errors
-    user: "${UID:-1000}:${GID:-1000}"
-    
+    user: "1000:1000"
     environment:
       - DISPLAY=${DISPLAY}
-      - QT_X11_NO_MITSHM=1
-      # Using /tmp as a generic home ensures tools can always write config/logs
       - HOME=/tmp
       - ROS_HOME=/tmp/.ros
-      # Optional: Pass through specific ROS domain ID if used in the lab
-      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
-
     volumes:
-      # GUI Support
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      
-      # Workspace Mounting (assumes compose file is in /docker/ folder)
       - ../src:/workspace/src:rw
       - ../install:/workspace/install:rw
       - ../build:/workspace/build:rw
       - ../log:/workspace/log:rw
-
-      # Persistent storage for ROS logs and tool configs
-      # Maps a hidden folder in your workspace to the container's scratch space
-      - ../.docker_home:/tmp:rw
-
-      # Device Access (LIDARs, Cameras, GPS)
       - /dev:/dev:rw
-
     working_dir: /workspace
-    
-    # Keeps the container alive for openagbot-dev.py to execute commands within
+    command: >
+      /bin/bash -c "
+      source /opt/ros/humble/setup.bash && 
+      if [ -f install/setup.bash ]; then source install/setup.bash; fi && 
+      ros2 launch basekit_launch basekit_launch.py"
     stdin_open: true
     tty: true
-    
-    restart: unless-stopped

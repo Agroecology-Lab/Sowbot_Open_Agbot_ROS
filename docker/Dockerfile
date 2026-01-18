@@ -60,4 +60,8 @@ RUN echo "source /opt/ros/humble/setup.bash" >> /root/.bashrc && \
     echo "source /workspace/install/setup.bash" >> /root/.bashrc
 
 # 9. Generic Entrypoint
+
+# Added by fix.py: Universal hardware script access
+RUN mkdir -p /opt/lizard && cp -r /root/.lizard/* /opt/lizard/ || true
+RUN chmod -R 755 /opt/lizard
 CMD ["/bin/bash"]

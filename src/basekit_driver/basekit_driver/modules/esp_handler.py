@@ -16,7 +16,7 @@ class ESPHandler:
     def __init__(self, node: Node, serial_comm: SerialCommunication):
         """Initialize ESP handler."""
         self._logger = node.get_logger()
-        self._espresso_path = '/root/.lizard/espresso.py'
+        self._espresso_path = '/opt/lizard/espresso.py'
         self._serial_comm = serial_comm
 
         # Get flash parameters from configuration
