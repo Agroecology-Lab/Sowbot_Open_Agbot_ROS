@@ -40,12 +40,12 @@ Run once on new systems. This is the automated installer designed to configure a
 python3 openagbotquick.py
 ```
 
-4. **Launch Stack:**
+3. **Launch Stack:**
 ```
 python3 openagbot-dev.py
 ```
 
-5. **Access UI:** Open a web browser on the host machine and navigate to http://localhost:8080.
+4. **Access UI:** Open a web browser on the host machine and navigate to http://localhost:8080.
    
 
 # Open Agbot Helper Scripts detail
