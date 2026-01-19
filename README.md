@@ -166,65 +166,6 @@ Ensure your user has dialout permissions on the host machine to allow the contai
 Refer to the LICENSE file for details on usage and distribution rights.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Docker Setup
-
-### Using Docker Compose
-
-1. Build and run the container:
-
-```bash
-cd docker
-docker-compose up --build
-```
-
-2. Run in detached mode:
-
-```bash
-docker-compose up -d
-```
-
-3. Attach to running container:
-
-```bash
-docker-compose exec basekit bash
-```
-
-4. Stop containers:
-
-```bash
-docker-compose down
-```
-
-The Docker setup includes:
-
-- All necessary ROS2 packages
-- Lizard communication tools
-- Camera drivers
-- GNSS drivers
-
 ## Connect to UI
 
 To access the user interface (UI), follow these steps:
@@ -278,23 +219,6 @@ curl --digest -u root:pw "http://192.168.42.3/axis-cgi/admin/param.cgi?action=up
 
 Replace `root:pw` with your camera's credentials and `192.168.42.3` with your camera's IP address. The authentication mode can be set to either `basic` or `digest`. Note that you should always use the `--digest` flag in these commands even when switching to basic auth, as the camera's current setting might be using digest authentication.
 
-## Quickstart guide
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/zauberzeug/basekit_ros.git
-cd basekit_ros
-```
-
-### 2. Validate Configuration
-
-Before building, check and adjust if needed:
-
-1. **ROS2 Configuration** (`basekit_launch/config/basekit.yaml`):
-
-   - Verify `serial_port` matches your setup (default: "/dev/ttyTHS0")
-   - Check `flash_parameters` for your hardware (default: "-j orin --nand")
 
 2. **Lizard Configuration** (`basekit_launch/config/basekit.liz`):
    - Verify motor configuration matches your hardware
