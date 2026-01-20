@@ -1,0 +1,63 @@
+# Stage 0: Builder
+FROM ros:humble-ros-base AS builder
+
+WORKDIR /open_agbot_ws
+
+# Install build dependencies and PIP packages
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pre-install Python libraries needed for the nodes
+RUN python3 -m pip install --no-cache-dir --upgrade pip && \
+    python3 -m pip install --no-cache-dir \
+    nicegui \
+    lizard \
+    transforms3d \
+    pyserial
+
+# Copy source and build (assuming your manage.py handles colcon calls)
+COPY . .
+# If building inside the docker manually:
+# RUN . /opt/ros/humble/setup.sh && colcon build --symlink-install
+
+# --- Runtime Stage ---
+FROM ros:humble-ros-base AS stage-1
+
+# Set up MongoDB repository for the shell
+RUN apt-get update && apt-get install -y gnupg wget && \
+    wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add - && \
+    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/6.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+
+# Install ALL identified dependencies
+RUN apt-get update -o Acquire::AllowInsecureRepositories=true \
+    -o Acquire::AllowDowngradeToInsecureRepositories=true && \
+    apt-get install -y --no-install-recommends --fix-missing \
+    ros-humble-diagnostic-updater \
+    ros-humble-ublox-gps \
+    ros-humble-nmea-msgs \
+    ros-humble-rtcm-msgs \
+    ros-humble-tf-transformations \
+    ros-humble-rmw-cyclonedds-cpp \
+    python3-pip \
+    python3-serial \
+    udev \
+    mongodb-org-shell \
+    libasio-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install runtime PIP dependencies again in this stage
+RUN python3 -m pip install --no-cache-dir transforms3d nicegui lizard
+
+WORKDIR /open_agbot_ws
+COPY --from=builder /open_agbot_ws /open_agbot_ws
+
+# Setup environment
+RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+RUN echo "source /open_agbot_ws/install/setup.bash" >> ~/.bashrc
+
+# Ensure root can access serial ports
+RUN usermod -a -G dialout root
+
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp

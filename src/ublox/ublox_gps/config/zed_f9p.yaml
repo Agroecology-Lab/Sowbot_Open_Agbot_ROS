@@ -5,7 +5,7 @@ ublox_gps_node:
     device: /dev/ttyACM0
     frame_id: gps
     uart1:
-      baudrate: 9600
+      baudrate: 115200
     # TMODE3 Config
     tmode3: 1                   # Survey-In Mode
     sv_in:

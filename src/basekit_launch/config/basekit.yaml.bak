@@ -2,6 +2,7 @@
   ros__parameters:
     hw_platform: laptop
     use_axis_camera: false
+
 controller:
   ros__parameters:
     base_frame: base_link
@@ -10,8 +11,8 @@ controller:
     publish_tf: true
     read_data:
       list:
-      - v_batt
-      - motor_status
+        - v_batt
+        - motor_status
       motor_status:
         default: 0
         type: int
@@ -19,62 +20,42 @@ controller:
         default: 0.0
         type: double
     robot_type: lizard
-    serial_port: /dev/ttyACM1
+    # This is now overridden by fixusb.py, but updated here for consistency
+    serial_port: /dev/ttyACM1 
     use_lizard: true
+
 tf_base_link_imu:
   ros__parameters:
-    rotation:
-    - 0.0
-    - 0.0
-    - 0.0
-    - 1.0
-    translation:
-    - 0.0
-    - 0.0
-    - 0.0
+    rotation: [0.0, 0.0, 0.0, 1.0]
+    translation: [0.0, 0.0, 0.0]
+
 tf_imu_gnss:
   ros__parameters:
-    rotation:
-    - 0.0
-    - 0.0
-    - 0.0
-    - 1.0
-    translation:
-    - 0.0
-    - 0.0
-    - 0.0
+    rotation: [0.0, 0.0, 0.0, 1.0]
+    translation: [0.0, 0.0, 0.0]
+
 tf_imu_vsm:
   ros__parameters:
-    rotation:
-    - 0.0
-    - 0.0
-    - 0.0
-    - 1.0
-    translation:
-    - 0.0
-    - 0.0
-    - 0.0
+    rotation: [0.0, 0.0, 0.0, 1.0]
+    translation: [0.0, 0.0, 0.0]
+
 ublox_gps_node:
   ros__parameters:
-    baudrate: 115200
     device: /dev/ttyACM0
+    baudrate: 115200
     frame_id: gps
-    gnss:
-      beidou: true
-      galileo: true
-      glonass: true
-      gps: true
+    # CRITICAL: Stop the data flood
     inf:
       all: false
-    meas_rate: 1000
-    nav_rate: 1
     publish:
       all: false
       nav:
         pvt: true
         sat: true
-    uart1:
-      baudrate: 115200
+    # Set frequency to 1Hz for stability
+    meas_rate: 1000 
+    nav_rate: 1
+
 web_ui:
   ros__parameters:
     host: 0.0.0.0

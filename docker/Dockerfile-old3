@@ -12,6 +12,7 @@ WORKDIR $WORKSPACE
 SHELL ["/bin/bash", "-c"]
 
 # 2. Reliability Layer: System Tooling & ROS Keys
+# Uses retry loops to handle flaky connections
 RUN for i in {1..5}; do \
     apt-get update -y && \
     apt-get install -y --no-install-recommends \
@@ -21,29 +22,26 @@ RUN for i in {1..5}; do \
     done
 
 # 3. Add MongoDB & Install Heavy ROS Dependencies
-# Added: ublox-gps, nmea-msgs, rtcm-msgs, diagnostic-updater, and cyclonedds
+# Split into its own layer to cache the large downloads
 RUN for i in {1..5}; do \
     curl -fsSL https://www.mongodb.org/static/pgp/server-6.0.asc | \
     gpg --dearmor --yes -o /usr/share/keyrings/mongodb-server-6.0.gpg && \
     echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/6.0 multiverse" | \
     tee /etc/apt/sources.list.d/mongodb-org-6.0.list && \
     apt-get update && \
-    apt-get install -y --no-install-recommends --fix-missing \
+    apt-get install -y --no-install-recommends \
     mongodb-org-server mongodb-org-shell python3-pymongo \
     python3-serial udev libasio-dev python3-colcon-common-extensions \
     ros-humble-navigation2 ros-humble-nav2-msgs ros-humble-gps-msgs \
     ros-humble-interactive-markers ros-humble-tf-transformations \
     ros-humble-twist-mux ros-humble-robot-state-publisher \
-    ros-humble-joint-state-publisher ros-humble-xacro \
-    ros-humble-ublox-gps ros-humble-ublox-msgs \
-    ros-humble-nmea-msgs ros-humble-rtcm-msgs \
-    ros-humble-diagnostic-updater ros-humble-rmw-cyclonedds-cpp && \
+    ros-humble-joint-state-publisher ros-humble-xacro && \
     break || (echo "Retry $i/5 failing, waiting..." && sleep 10); \
     done
 
-# 4. Install Python Logic (NiceGUI / Lizard / Transforms3d)
+# 4. Install Python Logic (NiceGUI / Lizard)
 RUN python3 -m pip install --no-cache-dir --upgrade pip && \
-    python3 -m pip install --no-cache-dir nicegui lizard transforms3d
+    python3 -m pip install --no-cache-dir nicegui lizard
 
 # 5. Lizard Espresso Firmware Download
 RUN mkdir -p /root/.lizard && cd /root && \
@@ -68,26 +66,22 @@ WORKDIR /workspace
 # Copy build artifacts and firmware from builder
 COPY --from=builder /workspace/install /workspace/install
 COPY --from=builder /root/.lizard /root/.lizard
+# Copy lizard to opt for global access
 COPY --from=builder /root/.lizard /opt/lizard
 
 # Environment Configuration
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
-ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+# Add workspace paths to PYTHONPATH
 ENV PYTHONPATH="${PYTHONPATH}:/workspace/install/basekit_ui/lib/python3.10/site-packages:/workspace/install/basekit_driver/lib/python3.10/site-packages"
 
-# Install only runtime-essential libs (Added GPS dependencies to runtime)
+# Install only runtime-essential python libs
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3-pip python3-serial mongodb-org-shell udev \
-    ros-humble-nmea-msgs ros-humble-rtcm-msgs \
-    ros-humble-ublox-gps ros-humble-nmea-msgs ros-humble-rtcm-msgs \
-    ros-humble-tf-transformations ros-humble-rmw-cyclonedds-cpp && \
-    python3 -m pip install --no-cache-dir nicegui lizard transforms3d && \
+    python3-pip python3-serial mongodb-org-shell && \
+    python3 -m pip install --no-cache-dir nicegui lizard && \
     rm -rf /var/lib/apt/lists/*
 
 # Final Bash Setup
 RUN echo "source /opt/ros/humble/setup.bash" >> /root/.bashrc && \
     echo "source /workspace/install/setup.bash" >> /root/.bashrc
 
-# Ensure root can access serial ports (GPS/Lizard)
-RUN usermod -a -G dialout root
 CMD ["/bin/bash"]

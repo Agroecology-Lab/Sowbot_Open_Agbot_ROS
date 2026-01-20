@@ -1,26 +1,28 @@
 services:
-  basekit:
-    image: openagbot-basekit:latest
-    container_name: basekit_dev
+  # The AgBot ROS Application
+  agbot:
+    image: openagbot:dev
+    container_name: openagbot_app
     network_mode: host
     privileged: true
-    user: "1000:1000"
-    environment:
-      - DISPLAY=${DISPLAY}
-      - HOME=/tmp
-      - ROS_HOME=/tmp/.ros
     volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      - ../src:/workspace/src:rw
-      - ../install:/workspace/install:rw
-      - ../build:/workspace/build:rw
-      - ../log:/workspace/log:rw
-      - /dev:/dev:rw
-    working_dir: /workspace
-    command: >
-      /bin/bash -c "
-      source /opt/ros/humble/setup.bash && 
-      if [ -f install/setup.bash ]; then source install/setup.bash; fi && 
-      ros2 launch basekit_launch basekit_launch.py"
-    stdin_open: true
-    tty: true
+      - /dev:/dev
+      - .:/open_agbot_ws  # Bind mount for dev-mode
+    environment:
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - MONGO_HOST=localhost
+    command: bash -c "source install/setup.bash && ros2 launch basekit_launch basekit_launch.py"
+    depends_on:
+      - mongodb
+
+  # Database for Topological Navigation
+  mongodb:
+    image: mongo:6.0
+    container_name: agbot_db
+    network_mode: host
+    volumes:
+      - mongodb_data:/data/db
+    restart: always
+
+volumes:
+  mongodb_data:

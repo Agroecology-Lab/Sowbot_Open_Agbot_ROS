@@ -42,17 +42,30 @@ def generate_launch_description():
         remappings=[('/cmd_vel', '/cmd_vel_nav')]
     )
 
-    # 4. GPS Node (u-blox)
-    # We pass the GPS_PORT as an argument to the included launch file
+
+    # Explicitly using the zed_f9p.yaml for your hardware
+    ublox_config = os.path.join(
+        get_package_share_directory('ublox_gps'), 
+        'config', 
+        'zed_f9p.yaml'
+    )
+
     ublox_gps_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory('ublox_gps'), 'launch', 'ublox_gps_node-launch.py')
         ),
         launch_arguments={
-            'params_file': config_file,
-            'device': gps_port  # Overrides the device path in the yaml
+            'params_file': ublox_config,
+            'device': gps_port,
+            'respawn': 'true'
         }.items()
     )
+    
+    
+    
+     
+    
+    
 
     # 5. Static Transforms
     static_tf_nodes = [
