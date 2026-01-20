@@ -41,7 +41,8 @@ python3 firstrun.py
 
 3. **Launch Stack:**
 ```
-python3 manage.py
+python3 manage.py build
+python3 manage.py 
 ```
 
 4. **Access UI:** Open a web browser on the host machine and navigate to http://localhost:8080.
