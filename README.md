@@ -61,13 +61,18 @@ To enter the running container for debugging or manual ROS 2 commands:
 ### Diagnostics
 If hardware is connected but topics are not flowing, run the diagnostic tool from inside the container:
 
-### After running ./login.sh
+#### After running ./login.sh
 ```
 python3 src/agbot-diagnostic.py
 ```
 
 ![TUI Status.](https://raw.githubusercontent.com/Agroecology-Lab/Open_agbot_devkit_ros/refs/heads/main/assets/Screenshot%20From%202026-01-21%2018-07-45.png)
 
+---
+
+## Web User Interface
+
+![TUI Status.](https://raw.githubusercontent.com/Agroecology-Lab/Open_agbot_devkit_ros/refs/heads/main/assets/Screenshot%20From%202026-01-21%2020-37-03.png)
 
 
 ---
