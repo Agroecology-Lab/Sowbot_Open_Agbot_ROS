@@ -65,6 +65,11 @@ If hardware is connected but topics are not flowing, run the diagnostic tool fro
 ```
 python3 src/agbot-diagnostic.py
 ```
+
+![TUI Status.](https://raw.githubusercontent.com/Agroecology-Lab/Open_agbot_devkit_ros/refs/heads/main/assets/Screenshot%20From%202026-01-21%2018-07-45.png)
+
+
+
 ---
 ## Roadmap
 
