@@ -10,20 +10,20 @@ Development is led by the <a href="https://agroecologylab.co.uk" target="_blank"
 
 ### 1. Clone the Repository
 Open a terminal on your host machine and download the workspace:
-
+```
 git clone https://github.com/Agroecology-Lab/Open_agbot_devkit_ros.git
 cd Open_agbot_devkit_ros
-
+```
 ### 2. Initialization
 Run the first-time setup script to configure your environment, install host dependencies, and build the Docker images:
-
+```
 python3 firstrun.py
-
+```
 ### 3. Build & Launch
 Use the management script to build the ROS 2 workspace and launch the robot stack. This script automatically handles hardware discovery and port permissions:
-
+```
 python3 manage.py
-
+```
 *Note: manage.py requires no arguments for standard operation. It automatically detects hardware ports (ESP32 & u-blox), updates your .env configuration, builds the workspace via colcon, and launches the containers.*
 
 ---
@@ -43,15 +43,16 @@ The primary entry point for the system. While it runs the full stack by default,
 
 ### Interactive Shell
 To enter the running container for debugging or manual ROS 2 commands:
-
+```
 ./login.sh
-
+```
 ### Diagnostics
 If hardware is connected but topics are not flowing, run the diagnostic tool from inside the container:
 
 ### After running ./login.sh
+```
 python3 src/agbot-diagnostic.py
-
+```
 ---
 ## Roadmap
 
