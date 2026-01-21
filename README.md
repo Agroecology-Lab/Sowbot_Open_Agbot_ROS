@@ -1,277 +1,111 @@
-# Open AgBot Devkit ROS
+# 🤖 Open AgBot DevKit (ROS 2)
 
-This repository contains the ROS 2 workspace and Docker configuration for the [Open AgBot by Agroecology Lab (WIP)](https://agroecologylab.org.uk/). This project is a fork of the original work by [Zauberzeug](https://github.com/zauberzeug) and has been optimized for agricultural robotics research using ROS 2 Humble.
+An open-source, containerized ROS 2 stack for autonomous agricultural robotics. This repository provides the drivers and orchestration for the Open AgBot platform, featuring RTK-GNSS localization and ESP32-based hardware control.
 
-## Project Structure
-
-The workspace is organized to manage hardware drivers, user interfaces, and system-wide launch configurations within a containerized environment.
-
-* src/basekit_driver: Manages serial communication with the motor controller.
-* src/basekit_ui: A web-based dashboard for robot monitoring and control.
-* src/basekit_launch: Contains system-wide launch files and hardware configurations.
-* src/ublox: Integrated GNSS drivers for precise positioning.
-
-## Prerequisites
-
-1. A Debian/ Ubuntu system
-2. Docker and Docker Compose.
-3. Git.
-
-## Installation and Setup
-
-Clone the repository to your local machine:
-   ```
-   git clone https://github.com/Agroecology-Lab/Open_agbot_devkit_ros.git
-   cd Open_agbot_ws
-   docker build --no-cache -t openagbot:dev -f docker/Dockerfile .
-   ```
-
-## Quick Start 
-
-Follow these steps to initialize the robot:
-
-1. **Connect Hardware:** Plug in the u-blox GPS and ESP32 MCU via USB
-
-2. **Initial Setup**
-Run once on new systems. This is the automated installer designed to configure a fresh Linux installation for the Agbot environment.
-
-```
-python3 firstrun.py
-```
-
-3. **Launch Stack:**
-```
-python3 manage.py build
-python3 manage.py 
-```
-
-4. **Access UI:** Open a web browser on the host machine and navigate to http://localhost:8080.
-   
-
-# Open Agbot Helper Scripts detail
-
-Use these scripts to manage the hardware-to-software bridge on your host machine.
-
-
-### 1. manage.py (Developer launch)
-**Primary daily workflow.** This script bridges your local environment to the ROS 2 Humble container.
-
-* **Function:** Mounts the local /src directory for live coding and forwards X11/GUI for tools like Rviz2 and Foxglove.
-* **Output:** Compiles the workspace and launches the full ROS 2 stack (GPS, Controller, and UI nodes).
-* **Usage:**
-
-###  Core Commands
-| Command | Action | Primary Use Case |
-| :--- | :--- | :--- |
-| `python3 manage.py` | **Fast Launch** | **Default.** Runs existing build. Use for Python, UI, or Launch changes. |
-| `python3 manage.py rebuild` | **Full Compile** | **C++ changes**, new ROS messages, or fixed dependencies. |
-| `python3 manage.py build` | **Image Build** | Rebuilds the **Dockerfile**. Use after editing the Dockerfile layers. |
-| `python3 manage.py clean` | **Local Cleanup** | Deletes `build/`, `install/`, and `log/` folders from your ThinkPad. |
-
-###  Modifier Flags
-| Flag | Pair with... | Effect |
-| :--- | :--- | :--- |
-| `--nuclear` | `clean` | Wipes all Docker data + host build folders. **Fixes "No space left" errors.** |
-| `--no-cache` | `build` | Forces fresh downloads. **Fixes GPG/Signature/Clock errors.** |
+Development is led by the [Agroecology Lab](https://github.com/Agroecology-Lab) and [Zauzerburg](https://github.com/Zauzerburg).
 
 ---
 
-###  Troubleshooting Reference
+## 🚀 Quick Start
 
-| If you encounter... | Run this command |
+### 1. Clone the Repository
+Open a terminal on your host machine and download the workspace:
+
+git clone https://github.com/Agroecology-Lab/Open_agbot_devkit_ros.git
+cd Open_agbot_devkit_ros
+
+### 2. Initialization
+Run the first-time setup script to configure your environment, install host dependencies, and build the Docker images:
+
+python3 firstrun.py
+
+### 3. Build & Launch
+Use the management script to build the ROS 2 workspace and launch the robot stack. This script automatically handles hardware discovery and port permissions:
+
+python3 manage.py
+
+*Note: manage.py requires no arguments for standard operation. It automatically detects hardware ports (ESP32 & u-blox), updates your .env configuration, builds the workspace via colcon, and launches the containers.*
+
+---
+
+## 🛠 Management & Tools
+
+### manage.py
+The primary entry point for the system. While it runs the full stack by default, it supports several optional arguments for development:
+
+| Argument | Description |
 | :--- | :--- |
-| **Normal Python Dev** | `python3 manage.py` |
-| **C++ Header Errors** | `python3 manage.py rebuild` |
-| **Disk Space Full (Error 100)** | `python3 manage.py clean --nuclear` |
-| **GPG / Signature Errors** | `python3 manage.py build --no-cache` |
+| (no args) | Standard mode: Detects hardware, builds workspace, and launches the stack. |
+| --build | Rebuilds the ROS 2 workspace (colcon build) before launching. |
+| --pkg <name> | Builds only the specified package. |
+| --debug | Launches containers in the foreground with verbose logging. |
+| --clean | Removes build, install, and log directories before starting. |
 
-### 2. ./login.sh (access container in terminal)
+### Interactive Shell
+To enter the running container for debugging or manual ROS 2 commands:
 
-* **Function:** Gets you into the container.
-* **Output:** A sourced bash shell in your container.
-* **Usage:** `./login.sh`
+./login.sh
 
-### 2. cleanstart.sh (Deep Reset)
-**System Reset.** Use this if the environment becomes unstable or if build artifacts conflict after major code changes.
+### Diagnostics
+If hardware is connected but topics are not flowing, run the diagnostic tool from inside the container:
 
-* **Function:** Performs a deep clean of the workspace and Docker daemon.
-* **Output:** Deletes build, install, and log folders and prunes stale Docker layers before initiating a fresh build.
-* **Usage:** `./cleanstart.sh`
+# After running ./login.sh
+python3 src/agbot-diagnostic.py
 
-### 4. .Git Automation Helper (`git.sh`)
+---
+## Roadmap
 
-The `git.sh` script is a utility designed to standardize the workflow for the Open Agbot DevKit, ensuring consistent branch management and conflict prevention
+Ratings scale from 0.1 (Conceptual) to 1.0 (Production-Ready), with 0.0 indicating a planned or non-validated integration.
 
-**Push to your main branch:**
-```
-./git.sh your commit message
-```
 
-**Push to your dev branch:**
-```
-./git.sh -dev your commit message
-```
+| Maturity | Feature | Description |
+| :--- | :--- | :--- |
+| **0.9** | **<a href="https://github.com/Agroecology-Lab/Open_agbot_devkit_ros" target="_blank">Containerized Deployment</a>** | Full ROS 2 Humble stack managed via Docker and the `manage.py` orchestration script. |
+| **0.7** | **<a href="https://github.com/KumarRobotics/ublox" target="_blank">KumarRobotics Ublox Driver</a>** | Industry-standard driver providing high-bandwidth UBX binary data and RTK support for centimeter-level positioning. |
+| **0.5** | **<a href="https://github.com/Agroecology-Lab/Open_agbot_devkit_ros" target="_blank">Stable Device Addressing</a>** | Persistent symlinking via the `fixusb.py` utility to map hardware to `/dev/esp` and `/dev/gps`. |
+| **0.4** | **<a href="https://github.com/Agroecology-Lab/Open_agbot_devkit_ros" target="_blank">Environment-Driven Configuration</a>** | Host-agnostic architecture using dynamic environment variables within the launch system. |
+| **0.3** | **<a href="https://github.com/LCAS/sentor" target="_blank">Sentor Safety & Health Monitoring</a>** | Integrated hardware-software heartbeat and topic-based diagnostics to trigger automated recovery or emergency motor cut-off. |
+| **0.3** | **<a href="https://github.com/Agroecology-Lab/Open_agbot_devkit_ros" target="_blank">Dynamic Hardware Abstraction</a>** | Lizard firmware engine integration for real-time ESP32 configuration via the basekit driver. |
+| **0.2** | **<a href="https://github.com/Agroecology-Lab/Open_agbot_devkit_ros" target="_blank">Real-time Telemetry Dashboard</a>** | Web-based cockpit for monitoring battery and GPS health via the `basekit_ui` package. |
+| **0.1** | **<a href="https://github.com/LCAS/topological_navigation" target="_blank">Topological Navigation</a>** | Integration of the LCAS topological framework for graph-based semantic waypoint navigation. |
+| **0.0** | **<a href="https://github.com/Agroecology-Lab/visual-multi-crop-row-navigation/tree/ROS2" target="_blank">Visual Crop-Row Navigation</a>** | Vision-based guidance system for following crop rows; currently in porting status for ROS 2. |
+| **0.0** | **<a href="https://github.com/MoffKalast/vizanti/tree/ros2" target="_blank">Vizanti Web Visualization</a>** | Planned integration of a web-based mission planner and 3D visualizer for remote operations. |
 
-## Components
 
-### Basekit Driver
-The BaseKit driver is based on the ATB Potsdam field_friend_driver. It manages communication with an ESP32 microcontroller running Lizard firmware, a domain-specific language for defining hardware behavior on embedded systems.
+---
 
-The package provides:
-* config/basekit.liz: Basic Lizard configuration for BaseKit robot.
-* config/basekit.yaml: Corresponding ROS 2 driver configuration.
+## 🏗 Project Structure
 
-Available ROS 2 topics:
-* /cmd_vel (geometry_msgs/Twist): Control robot movement.
-* /odom (nav_msgs/Odometry): Robot odometry data.
-* /battery_state (sensor_msgs/BatteryState): Battery status information.
-* /bumper_front_top_state (std_msgs/Bool): Front top bumper state.
-* /bumper_front_bottom_state (std_msgs/Bool): Front bottom bumper state.
-* /bumper_back_state (std_msgs/Bool): Back bumper state.
-* /emergency_stop (std_msgs/Bool): Software emergency stop control.
-* /estop1_state (std_msgs/Bool): Hardware emergency stop 1 state.
-* /estop2_state (std_msgs/Bool): Hardware emergency stop 2 state.
-* /configure (std_msgs/Empty): Trigger loading of the Lizard configuration file.
+* src/basekit_driver: ROS 2 node interfacing with the ESP32 MCU for battery status, bumpers, and odometry.
+* src/ublox: Driver suite for ZED-F9P RTK-GNSS modules.
+* src/basekit_launch: Centralized launch files to coordinate sensor fusion and driver startup.
+* src/basekit_ui: Web-based dashboard for real-time robot monitoring and control.
+* manage.py / firstrun.py: DevOps tooling for container and environment lifecycle.
 
-### Camera System
-The camera system supports both USB cameras and AXIS cameras, managed through a unified launch system in camera_system.launch.py.
+---
 
-* USB Cameras: Provides video streaming via the usb_cam ROS 2 package; configured through config/camera.yaml.
-* AXIS Cameras: Integrates with the ROS 2 AXIS camera driver; credentials managed through config/secrets.yaml.
-* Visualization: Integrates with Foxglove Studio for remote viewing. The Foxglove Bridge is accessible via WebSocket on port 8765.
+## Hardware Requirements
 
-### GNSS System
-The system supports high-precision positioning via Septentrio or u-blox F9P receivers. Driver selection is managed through config/gnss.yaml.
+The stack is pre-configured for the following reference design:
+- Compute: Linux-based host (ThinkPad, Raspberry Pi, Jetson) running Docker.
+- MCU: ESP32 Control Board (typically mapped to /dev/ttyACM0).
+- GPS: u-blox ZED-F9P (typically mapped to /dev/ttyACM2).
+- Communication: USB Serial (CDC).
 
-#### Septentrio Integration
-Uses the Septentrio ROS 2 driver for industrial-grade positioning. Available topics:
-* /pvtgeodetic: Position, velocity, and time in geodetic coordinates.
-* /poscovgeodetic: Position covariance.
-* /atteuler: Attitude in Euler angles.
-* /gpsfix: Detailed GPS fix information.
-* /aimplusstatus: AIM+ interference monitoring status.
+---
 
-#### u-blox F9P Integration
-Supports the ZED-F9P module for cost-effective RTK positioning.
-* Provides NMEA messages and UBX protocol support.
-* Supports NTRIP clients for achieving RTK-Fixed status.
-* Configuration is managed via ublox_gps node parameters.
+##  Topic Reference
 
-### Basekit UI
-The example UI provides a robot control interface built with NiceGUI. It features a joystick control interface for movement, real-time GNSS data visualization, and safety system monitoring (bumpers and e-stops).
+| Topic | Type | Description |
+| :--- | :--- | :--- |
+| /battery_state | sensor_msgs/BatteryState | Voltage and charge status |
+| /ublox_gps_node/fix | sensor_msgs/NavSatFix | Centimeter-level RTK global position |
+| /odom | nav_msgs/Odometry | Wheel encoder feedback and dead reckoning |
+| /cmd_vel | geometry_msgs/Twist | Velocity commands sent to the motor controllers |
+| /diagnostics | diagnostic_msgs/DiagnosticArray | Aggregated system health status |
 
-The interface is accessible via web browser at http://localhost:8080.
-
-<div align="center">
-  <img src="assets/BasekitUI.png" alt="Example UI Screenshot" width="500"/>
-  <div style="font-size: 0.95em; color: #555; margin-top: 0.5em;">
-    Example UI: Control, data, safety, and GPS map in one interface.
-  </div>
-</div>
-
-## Docker Setup
-
-The system runs entirely within Docker to ensure environment consistency across different hardware platforms.
-
-* The basekit service uses a Dockerfile that installs ROS 2 Humble and necessary Python dependencies (NiceGUI, pyserial).
-* Volume mapping links the local src/ directory to /workspace/src inside the container, enabling real-time code development.
-
-To restart the system after making changes to the code:
-python3 openagbotquick.py --clean
-
-## Hardware Configuration
-
-Port mappings for serial devices are defined in docker/docker-compose.yml. Common mappings include:
-* Controller Port: /dev/ttyACM0 or /dev/ttyTHS0.
-* GPS Port: /dev/ttyACM1.
-
-Ensure your user has dialout permissions on the host machine to allow the container access to these ports.
+---
 
 ## License
 
-Refer to the LICENSE file for details on usage and distribution rights.
-
-
-## Connect to UI
-
-To access the user interface (UI), follow these steps:
-
-1. **Connect to the Robot's Wi-Fi:**
-   Join the robot's WLAN network.
-
-2. **Open the UI in your browser:**
-   Navigate to:
-
-   ```
-   http://<ROBOT-IP>:80
-   ```
-
-   (Replace `<ROBOT-IP>` with the actual IP address once you have it.)
-
-## Launch Files
-
-The system can be started using different launch files:
-
-- `basekit.launch.py`: Launches all components
-- `basekit_nocams.launch.py`: Launches all components without the cameras
-- `field_friend.launch.py`: Launches only Field Friend driver
-- `camera_system.launch.py`: Launches complete camera system (USB + AXIS) and Foxglove Bridge
-- `usb_camera.launch.py`: Launches USB camera only
-- `axis_cameras.launch.py`: Launches AXIS cameras only
-- `gnss.launch.py`: Launches GNSS system
-- `ui.launch.py`: Launches the example UI node
-
-To launch the complete system:
-
-```bash
-ros2 launch basekit_launch basekit.launch.py
-```
-
-## AXIS Camera Authentication
-
-The AXIS cameras can be configured to use either digest or basic authentication. To check and configure the authentication mode:
-
-1. Check current authentication settings:
-
-```bash
-curl --digest -u root:pw "http://192.168.42.3/axis-cgi/admin/param.cgi?action=list&group=Network.HTTP" | cat
-```
-
-2. Switch authentication mode (e.g., from digest to basic):
-
-```bash
-curl --digest -u root:pw "http://192.168.42.3/axis-cgi/admin/param.cgi?action=update&Network.HTTP.AuthenticationPolicy=basic" | cat
-```
-
-Replace `root:pw` with your camera's credentials and `192.168.42.3` with your camera's IP address. The authentication mode can be set to either `basic` or `digest`. Note that you should always use the `--digest` flag in these commands even when switching to basic auth, as the camera's current setting might be using digest authentication.
-
-
-2. **Lizard Configuration** (`basekit_launch/config/basekit.liz`):
-   - Verify motor configuration matches your hardware
-   - Check pin assignments for bumpers and emergency stops
-   - Adjust any other hardware-specific settings
-
-### 3. Build with Docker
-
-```bash
-./docker.sh u
-```
-
-### 4. Send Lizard Configuration
-
-Once the system is running:
-
-- Use the "Send Lizard Config" button in the UI
-- Or use the `/configure` topic in ROS2
-
-### 5. Ready to Go
-
-Check the UI at `http://<ROBOT-IP>:80` to control and monitor your robot.
-
-## Future features
-
-This repository is still work in progress. Please feel free to contribute or reach out to us, if you need any unimplemented feature.
-
-- Complete tf2 frames
-- Handle camera calibrations
-- Robot visualization
+This project is licensed under the Apache License 2.0. See the LICENSE file for details.
