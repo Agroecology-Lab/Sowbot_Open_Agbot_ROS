@@ -1,12 +1,12 @@
-# 🤖 Open AgBot DevKit (ROS 2)
+# Open AgBot DevKit (ROS 2)
 
 An open-source, containerized ROS 2 stack for autonomous agricultural robotics. This repository provides the drivers and orchestration for the Open AgBot platform, featuring RTK-GNSS localization and ESP32-based hardware control.
 
-Development is led by the [Agroecology Lab](https://github.com/Agroecology-Lab) and [Zauzerburg](https://github.com/Zauzerburg).
+Development is led by the <a href="https://agroecologylab.co.uk" target="_blank">Agroecology Lab </a> building on the core developed by <a href="https://github.com/Zauzerburg" target="_blank">Zauzerburg</a> 
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone the Repository
 Open a terminal on your host machine and download the workspace:
@@ -28,7 +28,7 @@ python3 manage.py
 
 ---
 
-## 🛠 Management & Tools
+## Management & Tools
 
 ### manage.py
 The primary entry point for the system. While it runs the full stack by default, it supports several optional arguments for development:
@@ -49,7 +49,7 @@ To enter the running container for debugging or manual ROS 2 commands:
 ### Diagnostics
 If hardware is connected but topics are not flowing, run the diagnostic tool from inside the container:
 
-# After running ./login.sh
+### After running ./login.sh
 python3 src/agbot-diagnostic.py
 
 ---
@@ -74,7 +74,7 @@ Ratings scale from 0.1 (Conceptual) to 1.0 (Production-Ready), with 0.0 indicati
 
 ---
 
-## 🏗 Project Structure
+## Project Structure
 
 * src/basekit_driver: ROS 2 node interfacing with the ESP32 MCU for battery status, bumpers, and odometry.
 * src/ublox: Driver suite for ZED-F9P RTK-GNSS modules.
@@ -86,11 +86,15 @@ Ratings scale from 0.1 (Conceptual) to 1.0 (Production-Ready), with 0.0 indicati
 
 ## Hardware Requirements
 
-The stack is pre-configured for the following reference design:
-- Compute: Linux-based host (ThinkPad, Raspberry Pi, Jetson) running Docker.
+The stack is pre-configured for the <a href="https://agroecologylab.co.uk" target="_blank">Agroecology Lab reference designs </a>
+
+You may also have success with alternate platforms such as
+
+- Compute: Linux-based host (Avaota A1, Raspberry Pi, Jetson) running Docker.
 - MCU: ESP32 Control Board (typically mapped to /dev/ttyACM0).
 - GPS: u-blox ZED-F9P (typically mapped to /dev/ttyACM2).
 - Communication: USB Serial (CDC).
+- <a href="https://lizard.dev/module_reference/" target="_blank">Hardware & Motor drivers supported by Lizard </a>M
 
 ---
 
