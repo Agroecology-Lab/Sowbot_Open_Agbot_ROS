@@ -1,7 +1,5 @@
-
-/**:
+basekit_driver_node:
   ros__parameters:
-    port: "/dev/ttyACM0"
-    device: "/dev/ttyACM2"
     read_data:
-      list: ["battery", "encoder_left", "encoder_right"]
+      list: ["v_bat", "v_cap", "i_mot"]
+    publish_rate: 20.0
