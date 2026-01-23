@@ -1,8 +1,8 @@
 # Open AgBot DevKit (ROS 2)
 
-An open-source, containerized ROS 2 stack for autonomous agricultural robotics. This repository provides the drivers and orchestration for the Open AgBot platform, featuring RTK-GNSS localization and ESP32-based hardware control.
+An open-source, containerised ROS 2 stack for autonomous agricultural robotics. This repository provides the drivers and orchestration for the Open AgBot platform, featuring RTK-GNSS localization and ESP32-based hardware control.
 
-Development is led by the <a href="https://agroecologylab.co.uk" target="_blank">Agroecology Lab </a> building on the core developed by <a href="https://github.com/Zauzerburg" target="_blank">Zauzerburg</a> 
+Development is led by the <a href="https://agroecologylab.co.uk" target="_blank">Agroecology Lab </a> building on the core developed by <a href="https://github.com/zauberzeug/" target="_blank">Zauberzeug</a> 
 
 ---
 
