@@ -7,7 +7,7 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     # Detect the GPS port from the environment, defaulting to ACM1
-    env_gps_port = "/dev/gps_hardware"
+    env_gps_port = os.getenv("GPS_PORT", "/dev/ttyACM2")
 
     return LaunchDescription([
         DeclareLaunchArgument('params_file',

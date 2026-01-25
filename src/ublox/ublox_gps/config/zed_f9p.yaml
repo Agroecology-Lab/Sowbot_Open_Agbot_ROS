@@ -1,29 +1,39 @@
-# Configuration Settings for C94-M8P device
 ublox_gps_node:
   ros__parameters:
-    debug: 0                    # Range 0-4 (0 means no debug statements will print)
-    device: "/dev/ttyACM1"
-    frame_id: gps
-    uart1:
-      baudrate: 115200
-    # TMODE3 Config
-    tmode3: 0
-    sv_in:
-      reset: True               # True: disables and re-enables survey-in (resets)
-                                # False: Disables survey-in only if TMODE3 is
-                                # disabled
-      min_dur: 300              # Survey-In Minimum Duration [s]
-      acc_lim: 3.0              # Survey-In Accuracy Limit [m]
-
-    inf:
-      all: true                   # Whether to display all INF messages in console
+    # --- Hardware Connection ---
+    # Uses the path found by fixusb.py in your .env
+    device: ${GPS_PORT}
+    baudrate: 460800
+    frame_id: "gps"
     
+    # --- Stability Settings ---
+    # Setting this to true allows the driver to configure the chip on boot
+    config_on_startup: true
+    # Prevents crash if the chip is busy during the version query
+    wait_for_device: true
+
+    # --- Protocol Filtering (The CPU Fix) ---
+    # This stops the ASIO 'End of File' spam by forcing binary-only comms
+    usb:
+      in: 1    # UBX Only
+      out: 1   # UBX Only
+    
+    # Explicitly disable NMEA strings (the source of the EOF errors)
+    nmea:
+      set: false
+
+    # --- Data Output ---
+    # High-precision navigation data
     publish:
       all: true
-      aid:
-        hui: false
       nav:
-        posecef: false
-    uart1.baudRate: 115200
+        pvt: true    # Position, Velocity, Time (Essential)
+        relposned: true # Required for Heading/RTK base-rover setups
+      rxm:
+        raw: true    # Raw observations for post-processing if needed
+
+    # --- Noise Reduction ---
+    inf:
+      all: false     # Silences debug strings that bloat the serial buffer
+    tmode3: 0
     nav_rate: 1
-    meas_rate: 100

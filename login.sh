@@ -1,13 +1,11 @@
 #!/bin/bash
 
-# Target the specific container name used in manage.py
-CONTAINER_NAME="open_agbot"
+# Check for both common container names
+CONTAINER_NAME=$(docker ps --format '{{.Names}}' | grep -E '^open_agbot$|^open_ag_debug$' | head -n 1)
 
-# Check if the container is actually running
-if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+if [ -z "$CONTAINER_NAME" ]; then
     echo "------------------------------------------------------"
     echo "❌ ERROR: No running AgBot container found."
-    echo "Container '${CONTAINER_NAME}' is not active."
     echo "Make sure you have started the robot with: python3 manage.py"
     echo "------------------------------------------------------"
     exit 1
@@ -18,5 +16,5 @@ echo "✅ Found AgBot Container: $CONTAINER_NAME"
 echo "🚀 Entering Bash environment..."
 echo "------------------------------------------------------"
 
-# Enter the container with an interactive bash shell
-docker exec -it $CONTAINER_NAME bash -c "source /opt/ros/humble/setup.bash && source install/setup.bash && bash"
+# Enter the container and source the workspace automatically
+docker exec -it $CONTAINER_NAME bash -c "source /opt/ros/humble/setup.bash && source install/setup.bash && export PYTHONPATH=\$PYTHONPATH:/open_agbot_ws/src/basekit_ui && bash"

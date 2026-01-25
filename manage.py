@@ -1,55 +1,67 @@
-#!/usr/bin/env python3
-import subprocess, os, sys
+import subprocess
+import os
+import sys
+import signal
+import time
 
-IMAGE_NAME = "agbot_image"
-CONTAINER_NAME = "open_agbot"
-WORKSPACE = os.getcwd()
-
-def run_cmd(cmd):
-    return subprocess.run(cmd, shell=True)
-
-def launch():
-    print("🔍 Running fixusb.py...")
-    run_cmd("python3 fixusb.py")
+def run_runtime():
+    CONTAINER_NAME = "open_agbot"
     
-    mcu, gps = "/dev/ttyACM[0-9]", "/dev/ttyACM2"
-    if os.path.exists(".env"):
-        with open(".env", "r") as f:
+    # 1. Execute hardware discovery before checking environment
+    if os.path.exists('fixusb.py'):
+        print("Running hardware discovery (fixusb.py)...")
+        # Ensure fixusb.py completes before proceeding
+        subprocess.run(['python3', 'fixusb.py'], check=True)
+    else:
+        print("Warning: fixusb.py not found. Using existing environment.")
+
+    # 2. Check environment for actual ports
+    # Reading fresh results after fixusb.py has finished writing
+    ports = {'GPS_PORT': 'virtual', 'MCU_PORT': 'virtual'}
+    if os.path.exists('.env'):
+        with open('.env', 'r') as f:
             for line in f:
-                if "MCU_PORT" in line: mcu = line.split("=")[1].strip()
-                if "GPS_PORT" in line: gps = line.split("=")[1].strip()
+                if '=' in line and not line.startswith('#'):
+                    k, v = line.strip().split('=', 1)
+                    ports[k] = v
 
-    print(f"🛠️  PATCHING SOURCE...")
-    # Ensure modules folder is a package
-    run_cmd("touch src/basekit_driver/basekit_driver/modules/__init__.py")
-    # Apply C++ GPS path fix
-    run_cmd(f"sed -i 's|/dev/ttyACM[0-9]|{gps}|g' src/ublox/ublox_gps/src/node.cpp")
+    # Logic Fork: If hardware is found, skip simulation
+    is_virtual = (ports['GPS_PORT'] == 'virtual' and ports['MCU_PORT'] == 'virtual')
+    
+    # 3. Cleanup and Launch
+    subprocess.run(["docker", "rm", "-f", CONTAINER_NAME], capture_output=True)
 
-    # Update Driver Config
-    with open("src/basekit_driver/config/basekit_driver.yaml", "w") as f:
-        f.write(f"""
-basekit_driver_node:
-  ros__parameters:
-    port: "{mcu}"
-    read_data:
-      list: ["battery", "encoder_left", "encoder_right"]
-""")
+    sim_proc = None
+    if is_virtual:
+        print("Mode: Simulation (No Hardware Detected)")
+        sim_proc = subprocess.Popen(['bash', 'sim_lizard.sh'], 
+                                    stdout=subprocess.DEVNULL, 
+                                    preexec_fn=os.setsid)
+        time.sleep(1)
+    else:
+        print(f"Mode: Robot | GPS: {ports['GPS_PORT']} | MCU: {ports['MCU_PORT']}")
 
-    print(f"🚀 Building Full Workspace and Launching...")
-    run_cmd("sudo chmod 666 /dev/ttyACM*")
-    run_cmd(f"docker rm -f {CONTAINER_NAME} 2>/dev/null || true")
-
-    # Removed --packages-select to ensure 'basekit_launch' is installed
-    launch_cmd = (
-        f"docker run -it --name {CONTAINER_NAME} --net=host --privileged "
-        f"-v /dev:/dev -v {WORKSPACE}:/open_agbot_ws -w /open_agbot_ws "
-        f"{IMAGE_NAME} bash -c '"
-        f"source /opt/ros/humble/setup.bash && "
-        f"colcon build --symlink-install && "
-        f"source install/setup.bash && "
-        f"ros2 launch basekit_launch master.launch.py'"
-    )
-    run_cmd(launch_cmd)
+    try:
+        print(f"Launching AgBot Runtime in {CONTAINER_NAME}...")
+        
+        # Injects detected ports as launch arguments 
+        # to override defaults in basekit_launch.py
+        cmd = [
+            "docker", "run", "-it", "--rm", "--name", CONTAINER_NAME,
+            "--net=host", "--privileged", "--env-file", ".env",
+            "-v", f"{os.getcwd()}:/open_agbot_ws", "-w", "/open_agbot_ws",
+            "openagbot:dev", "bash", "-c",
+            f"source /opt/ros/humble/setup.bash && source install/setup.bash && "
+            f"ros2 launch basekit_launch basekit_launch.py "
+            f"gps_port:={ports['GPS_PORT']} mcu_port:={ports['MCU_PORT']}"
+        ]
+        subprocess.run(cmd)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        if sim_proc:
+            print("\nStopping Simulation...")
+            os.killpg(os.getpgid(sim_proc.pid), signal.SIGTERM)
 
 if __name__ == "__main__":
-    launch()
+    run_runtime()
