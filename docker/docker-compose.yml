@@ -24,10 +24,12 @@ services:
       - MCU_PORT=${MCU_PORT}
     # Passing variables directly to the ROS2 launch system
     command: >
-      bash -c "source install/setup.bash && 
-      if [ "$GPS_PORT" != "virtual" ]; then ros2 launch basekit_launch basekit_launch.py; else ros2 run basekit_driver basekit_driver_node --ros-args -r __node:=controller -p use_sim_time:=true; fi 
-      gps_port:=$GPS_PORT 
-      mcu_port:=$MCU_PORT"
+      bash -c "source /workspace/install/setup.bash && 
+      if [ "$GPS_PORT" != "virtual" ]; then 
+        ros2 launch basekit_launch basekit_launch.py gps_port:=$GPS_PORT mcu_port:=$MCU_PORT; 
+      else 
+        ros2 run basekit_driver basekit_driver_node --ros-args -r __node:=controller -p use_sim_time:=true & ros2 run basekit_ui basekit_ui_node; 
+      fi"
     depends_on:
       - mongodb
 

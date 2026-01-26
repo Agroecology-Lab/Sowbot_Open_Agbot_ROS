@@ -4,64 +4,68 @@ import sys
 import signal
 import time
 
-def run_runtime():
-    CONTAINER_NAME = "open_agbot"
+def run_build():
+    print("🧹 Cleaning old build artifacts...")
+    subprocess.run(['sudo', 'rm', '-rf', 'build/', 'install/', 'log/'], check=False)
     
-    # 1. Execute hardware discovery before checking environment
-    if os.path.exists('fixusb.py'):
-        print("Running hardware discovery (fixusb.py)...")
-        # Ensure fixusb.py completes before proceeding
-        subprocess.run(['python3', 'fixusb.py'], check=True)
-    else:
-        print("Warning: fixusb.py not found. Using existing environment.")
+    print("🛠️  Building Docker Image...")
+    subprocess.run(["docker", "build", "-t", "openagbot:dev", "-f", "docker/Dockerfile", "."], check=True)
 
-    # 2. Check environment for actual ports
-    # Reading fresh results after fixusb.py has finished writing
-    ports = {'GPS_PORT': 'virtual', 'MCU_PORT': 'virtual'}
+    print("🏗️  Syncing build artifacts to host...")
+    cmd_sync = [
+        "docker", "run", "--rm", "-v", f"{os.getcwd()}:/workspace", "-w", "/workspace",
+        "openagbot:dev", "bash", "-c", 
+        "source /opt/ros/humble/setup.bash && colcon build --symlink-install --executor sequential --parallel-workers 1"
+    ]
+    subprocess.run(cmd_sync, check=True)
+    print("✅ Build and Sync Complete.")
+
+def run_runtime(extra_args):
+    CONTAINER_NAME = "open_agbot"
+    if os.path.exists('fixusb.py'):
+        subprocess.run(['python3', 'fixusb.py'], check=True)
+
+    ports = {}
     if os.path.exists('.env'):
         with open('.env', 'r') as f:
             for line in f:
                 if '=' in line and not line.startswith('#'):
                     k, v = line.strip().split('=', 1)
-                    ports[k] = v
-
-    # Logic Fork: If hardware is found, skip simulation
-    is_virtual = (ports['GPS_PORT'] == 'virtual' and ports['MCU_PORT'] == 'virtual')
+                    ports[k.strip()] = v.strip()
     
-    # 3. Cleanup and Launch
+    gps_p = ports.get('GPS_PORT', 'virtual')
+    mcu_p = ports.get('MCU_PORT', 'virtual')
+    is_virtual = (gps_p == 'virtual' and mcu_p == 'virtual')
     subprocess.run(["docker", "rm", "-f", CONTAINER_NAME], capture_output=True)
 
     sim_proc = None
     if is_virtual:
-        print("Mode: Simulation (No Hardware Detected)")
-        sim_proc = subprocess.Popen(['bash', 'sim_lizard.sh'], 
-                                    stdout=subprocess.DEVNULL, 
-                                    preexec_fn=os.setsid)
-        time.sleep(1)
-    else:
-        print(f"Mode: Robot | GPS: {ports['GPS_PORT']} | MCU: {ports['MCU_PORT']}")
+        print("🎮 Mode: Simulation")
+        if os.path.exists('sim_lizard.sh'):
+            sim_proc = subprocess.Popen(['bash', 'sim_lizard.sh'], stdout=subprocess.DEVNULL, preexec_fn=os.setsid)
+            time.sleep(1)
 
     try:
-        print(f"Launching AgBot Runtime in {CONTAINER_NAME}...")
-        
-        # Injects detected ports as launch arguments 
-        # to override defaults in basekit_launch.py
+        pass_through_args = " ".join(extra_args)
+        print(f"🚀 Launching {CONTAINER_NAME} | GPS: {gps_p} | MCU: {mcu_p}")
         cmd = [
             "docker", "run", "-it", "--rm", "--name", CONTAINER_NAME,
             "--net=host", "--privileged", "--env-file", ".env",
-            "-v", f"{os.getcwd()}:/open_agbot_ws", "-w", "/open_agbot_ws",
+            "-v", f"{os.getcwd()}:/workspace", "-w", "/workspace",
             "openagbot:dev", "bash", "-c",
             f"source /opt/ros/humble/setup.bash && source install/setup.bash && "
             f"ros2 launch basekit_launch basekit_launch.py "
-            f"gps_port:={ports['GPS_PORT']} mcu_port:={ports['MCU_PORT']}"
+            f"gps_port:={gps_p} mcu_port:={mcu_p} {pass_through_args}"
         ]
         subprocess.run(cmd)
     except KeyboardInterrupt:
         pass
     finally:
         if sim_proc:
-            print("\nStopping Simulation...")
             os.killpg(os.getpgid(sim_proc.pid), signal.SIGTERM)
 
 if __name__ == "__main__":
-    run_runtime()
+    if len(sys.argv) > 1 and sys.argv[1] == "build":
+        run_build()
+    else:
+        run_runtime(sys.argv[1:])
