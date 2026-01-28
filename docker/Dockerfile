@@ -83,3 +83,14 @@ ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 # 5. Resilient Runtime Install
 RUN for i in {1..5}; do \
     apt-get update && \
+    apt-get install -y --no-install-recommends --fix-missing \
+    python3-pip python3-serial udev libasio-dev \
+    ros-humble-navigation2 \
+    ros-humble-ublox-gps \
+    ros-humble-tf-transformations \
+    ros-humble-rmw-cyclonedds-cpp && \
+    break || sleep 10; \
+    done && \
+    python3 -m pip install --no-cache-dir --upgrade pip && \
+    python3 -m pip install --no-cache-dir nicegui lizard transforms3d && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
