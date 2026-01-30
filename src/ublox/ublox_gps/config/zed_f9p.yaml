@@ -1,41 +1,19 @@
 ublox_gps_node:
   ros__parameters:
-    # --- Hardware Connection ---
-    # Uses the path found by fixusb.py in your .env
-    device: ${GPS_PORT}
+    # 1. STOP THE TUG-OF-WAR
+    config_on_startup: false  
+    load:
+      set_all: false
+      initialize: false
+
+    # 2. LOCK THE PIPE
     baudrate: 460800
     uart1:
       baudrate: 460800
-    frame_id: "gps"
-    
-    # --- Stability Settings ---
-    # Setting this to true allows the driver to configure the chip on boot
-    config_on_startup: true
-    # Prevents crash if the chip is busy during the version query
-    wait_for_device: true
 
-    # --- Protocol Filtering (The CPU Fix) ---
-    # This stops the ASIO 'End of File' spam by forcing binary-only comms
-    usb:
-      in: 1    # UBX Only
-      out: 1   # UBX Only
-    
-    # Explicitly disable NMEA strings (the source of the EOF errors)
-    nmea:
-      set: false
-
-    # --- Data Output ---
-    # High-precision navigation data
+    # 3. SILENCE THE NOISE
     publish:
-      all: true
+      inf:
+        all: false
       nav:
-        pvt: true    # Position, Velocity, Time (Essential)
-        relposned: true # Required for Heading/RTK base-rover setups
-      rxm:
-        raw: true    # Raw observations for post-processing if needed
-
-    # --- Noise Reduction ---
-    inf:
-      all: false     # Silences debug strings that bloat the serial buffer
-    tmode3: 0
-    nav_rate: 1
+        pvt: true
