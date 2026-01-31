@@ -43,14 +43,14 @@ def first_time_build():
     """Perform the memory-safe build."""
     print(f"{GREEN}[3/4] Building Docker Image (Tag: dev)...{RESET}")
     # Change: We target the specific service or just build all with tags from compose
-    success = run_cmd("docker compose build")
+    success = run_cmd("docker-compose -f docker/docker-compose.yml build")
     if not success:
         print(f"{RED}[!] Build failed. Check if your ThinkPad has internet.{RESET}")
         sys.exit(1)
 
 def launch():
     print(f"{GREEN}[4/4] Launching System...{RESET}")
-    run_cmd("docker compose up -d")
+    run_cmd("docker-compose -f docker/docker-compose.yml up -d")
     print(f"\n{GREEN}=============================================={RESET}")
     print(f"Setup Complete! Your AgBot is running.")
     print(f"Dashboard: http://localhost:8080")
