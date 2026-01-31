@@ -19,6 +19,7 @@ def generate_launch_description():
 
     is_gps_present = os.path.exists(gps_port)
     is_mcu_present = os.path.exists(mcu_port)
+    
     # Simulation mode is active if any critical hardware is missing
     is_sim = not (is_gps_present and is_mcu_present)
     mode_label = "REAL HARDWARE" if not is_sim else "GHOST SIMULATION"
@@ -69,10 +70,19 @@ def generate_launch_description():
     ))
 
     # 4. Topological Navigation
+    tmap_path = '/workspace/maps/test_map.yaml'
+    
     ld.add_action(Node(
-        package="topological_navigation", executable="map_manager2.py",
-        name="map_manager", arguments=['/workspace/maps/test_map.yaml'],
-        parameters=[{"tmap_file": "/workspace/maps/test_map.yaml"}]
+        package="topological_navigation", 
+        executable="map_manager2.py",
+        name="map_manager", 
+        arguments=[tmap_path], # Triggers immediate file load via sys.argv[1]
+        parameters=[{
+            "tmap_file": tmap_path,
+            "use_sim_time": is_sim,
+            "pointset": "agbot_fields" 
+        }],
+        output='screen'
     ))
 
     # 5. Conditional Driver Stack
