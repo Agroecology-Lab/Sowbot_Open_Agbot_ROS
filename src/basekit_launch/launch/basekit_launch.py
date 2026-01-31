@@ -5,7 +5,7 @@ from launch.actions import LogInfo
 from launch_ros.actions import Node
 
 # --- VERSIONING ---
-VERSION = "5.6-STABLE-FLATTENED"
+VERSION = "5.9-FINAL-HYBRID"
 
 def generate_launch_description():
     ld = LaunchDescription()
@@ -17,14 +17,18 @@ def generate_launch_description():
     gps_port = os.environ.get('GPS_PORT', '/dev/ttyACM1')
     mcu_port = os.environ.get('MCU_PORT', '/dev/ttyACM0')
 
-    is_hardware_present = os.path.exists(gps_port) and os.path.exists(mcu_port)
-    is_sim = not is_hardware_present
-    mode_label = "HARDWARE" if is_hardware_present else "SIMULATION"
+    is_gps_present = os.path.exists(gps_port)
+    is_mcu_present = os.path.exists(mcu_port)
+    # Simulation mode is active if any critical hardware is missing
+    is_sim = not (is_gps_present and is_mcu_present)
+    mode_label = "REAL HARDWARE" if not is_sim else "GHOST SIMULATION"
 
     # Version Banner
     ld.add_action(LogInfo(msg="======================================================"))
     ld.add_action(LogInfo(msg=f"🚀 AGBOT MASTER LAUNCH V{VERSION}"))
-    ld.add_action(LogInfo(msg=f"🎮 MODE: {mode_label} | GPS: {gps_port}"))
+    ld.add_action(LogInfo(msg=f"🎮 MODE: {mode_label}"))
+    ld.add_action(LogInfo(msg=f"📡 GPS: {gps_port} ({'FOUND' if is_gps_present else 'MISSING'})"))
+    ld.add_action(LogInfo(msg=f"📡 MCU: {mcu_port} ({'FOUND' if is_mcu_present else 'MISSING'})"))
     ld.add_action(LogInfo(msg="======================================================"))
 
     # 2. UI & Communication Bridge
@@ -41,7 +45,6 @@ def generate_launch_description():
     ))
 
     # 3. Navigation Stack & Lifecycle Management
-    # Standardised to avoid 'local_costmap/local_costmap' nesting
     ld.add_action(Node(
         package='nav2_lifecycle_manager', executable='lifecycle_manager',
         name='lifecycle_manager_navigation', output='screen',
@@ -72,38 +75,23 @@ def generate_launch_description():
         parameters=[{"tmap_file": "/workspace/maps/test_map.yaml"}]
     ))
 
-    # 5. Conditional Driver Loading
-    if is_hardware_present:
+    # 5. Conditional Driver Stack
+    if is_gps_present:
         config_path = '/workspace/src/ublox/ublox_gps/config/zed_f9p.yaml'
-        
         ld.add_action(Node(
-            package='ublox_gps', 
-            executable='ublox_gps_node', 
-            name='ublox_gps_node', 
+            package='ublox_gps', executable='ublox_gps_node', name='ublox_gps_node', 
             output='screen',
-            parameters=[
-                config_path, 
-                {
-                    'device': gps_port,
-                    'baudrate': 460800,
-                    'uart1.baudrate': 460800,
-                    'frame_id': 'gps',
-                    'publish': {'nav': {'pvt': True}},
-                    'ubx': {'enabled': True},
-                    'meas_rate': 200,
-                    'nav_rate': 1,
-                    'tmode3': 0,
-                    'config_on_startup': True
-                }
-            ],
+            parameters=[config_path, {'device': gps_port, 'config_on_startup': True}],
             respawn=True
         ))
-        
-        ld.add_action(Node(
-            package='basekit_driver', executable='basekit_driver_node', 
-            name='basekit_driver_node', 
-            parameters=[{'port': mcu_port}], 
-            respawn=True
-        ))
-    
+    else:
+        ld.add_action(LogInfo(msg="⚠️ GPS NOT FOUND: Skipping hardware driver to prevent crash-loop."))
+
+    ld.add_action(Node(
+        package='basekit_driver', executable='basekit_driver_node', 
+        name='basekit_driver_node', 
+        parameters=[{'port': mcu_port, 'sim': is_sim}], 
+        respawn=True
+    ))
+
     return ld
