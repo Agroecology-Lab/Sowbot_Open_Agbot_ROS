@@ -1,82 +1,41 @@
-metric_map: map
-name: test_map
-nodes:
-- meta:
-    map: test_map
-    node_type: waypoint
-    pointset: agbot_fields
-  node:
-    edges:
-    - action: nav2_to_pose
-      edge_id: WP1_to_WP2
-      node: WayPoint2
-    meta:
-      map: test_map
-      node_type: waypoint
-      pointset: agbot_fields
-    name: WayPoint1
-    pose:
-      orientation:
-        w: 1.0
-        x: 0.0
-        y: 0.0
-        z: 0.0
-      position:
-        x: 0.0
-        y: 0.0
-        z: 0.0
-    verts:
-    - x: 0.5
-      y: 0.5
-    - x: -0.5
-      y: 0.5
-    - x: -0.5
-      y: -0.5
-    - x: 0.5
-      y: -0.5
-- meta:
-    map: test_map
-    node_type: waypoint
-    pointset: agbot_fields
-  node:
-    edges:
-    - action: nav2_to_pose
-      edge_id: WP2_to_WP1
-      node: WayPoint1
-    meta:
-      map: test_map
-      node_type: waypoint
-      pointset: agbot_fields
-    name: WayPoint2
-    pose:
-      orientation:
-        w: 1.0
-        x: 0.0
-        y: 0.0
-        z: 0.0
-      position:
-        x: 2.0
-        y: 0.0
-        z: 0.0
-    verts:
-    - x: 0.5
-      y: 0.5
-    - x: -0.5
-      y: 0.5
-    - x: -0.5
-      y: -0.5
-    - x: 0.5
-      y: -0.5
-pointset: agbot_fields
+name: "agbot_field"
+metric_map: "agbot_field"
+pointset: "agbot_fields"
+meta:
+  map: "agbot_field"
+  pointset: "agbot_fields"
 transformation:
-  child: robot_base
-  parent: map
-  rotation:
-    w: 1.0
-    x: 0.0
-    y: 0.0
-    z: 0.0
-  translation:
-    x: 0.0
-    y: 0.0
-    z: 0.0
+  parent: "map"
+  child: "base_link"
+  header:
+    frame_id: "map"
+    stamp: {nanosec: 0, sec: 0}
+  rotation: {w: 1.0, x: 0.0, y: 0.0, z: 0.0}
+  translation: {x: 0.0, y: 0.0, z: 0.0}
+nodes:
+  - meta:
+      map: "agbot_field"
+      pointset: "agbot_fields"
+    node:
+      name: "waypoint_1"
+      map: "agbot_field"
+      pointset: "agbot_fields"
+      localise_by_topic: "" # <--- Added this to stop the KeyError
+      meta:
+        map: "agbot_field"
+        pointset: "agbot_fields"
+      pose:
+        position: {x: 0.0, y: 0.0, z: 0.0}
+        orientation: {w: 1.0, x: 0.0, y: 0.0, z: 0.0}
+      edges: []
+      verts:
+        - {x: 0.5, y: 0.5}
+        - {x: -0.5, y: 0.5}
+        - {x: -0.5, y: -0.5}
+        - {x: 0.5, y: -0.5}
+      properties:
+        xy_goal_tolerance: 0.3
+        yaw_goal_tolerance: 0.1
+      rc_extra_config: ""
+      recovery_behaviours_config: ""
+      restriction_area: ""
