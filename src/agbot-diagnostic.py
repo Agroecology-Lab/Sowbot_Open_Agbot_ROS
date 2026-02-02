@@ -24,7 +24,7 @@ def get_env_config():
 # --- CONFIGURATION ---
 EXPECTED_NODES = ["/basekit_driver_node", "/ublox_gps_node", "/web_ui", "/rosbridge_websocket"]
 TARGET_TOPICS = {
-    "GPS Fix": "/gps/fix",
+    "GPS Fix": "/fix",
     "Battery": "/battery_state",
     "Odometry": "/odom",
     "Motor Cmds": "/cmd_vel"
@@ -204,7 +204,8 @@ if __name__ == "__main__":
     print("📡 TOPIC CONTENT PREVIEW")
     print("═"*75)
     for label, topic in TARGET_TOPICS.items():
-        echo_data = run_cmd("timeout 0.5s ros2 topic echo {0} --once --no-arr".format(topic))
+        # This line must be indented 8 spaces (2 tabs) to be inside the loop
+        echo_data = run_cmd("timeout 0.8s ros2 topic echo {0} --once --no-arr --qos-reliability best_effort".format(topic))
         if echo_data:
             clean_text = echo_data.replace('\n', ' | ')
             print("✅ {0:<12} : {1}...".format(label, clean_text[:90]))

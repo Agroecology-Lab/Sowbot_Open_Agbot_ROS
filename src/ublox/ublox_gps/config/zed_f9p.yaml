@@ -1,19 +1,27 @@
 ublox_gps_node:
   ros__parameters:
-    # 1. STOP THE TUG-OF-WAR
-    config_on_startup: false  
-    load:
-      set_all: false
-      initialize: false
+    # 1. ALLOW CONFIGURATION
+    # Must be true for the driver to actually apply the t_mode fix
+    config_on_startup: true  
 
-    # 2. LOCK THE PIPE
-    baudrate: 460800
+    # 2. HARDWARE PORT SETTINGS
+    device: "/dev/ttyACM0"
     uart1:
       baudrate: 460800
 
-    # 3. SILENCE THE NOISE
+    # 3. THE FIX: ROVER MODE
+    # TMODE3 must be 0 for a moving robot (Rover)
+    t_mode: 0 
+
+    # 4. RATE SETTINGS
+    # 5Hz is usually the sweet spot for AgBots
+    nav_rate: 5 
+
+    # 5. DATA PUBLISHING
     publish:
-      inf:
-        all: false
+      all: true
       nav:
         pvt: true
+        sat: true
+      inf:
+        all: false # Keep logs clean

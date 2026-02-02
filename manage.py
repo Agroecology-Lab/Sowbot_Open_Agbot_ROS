@@ -10,62 +10,50 @@ CONTAINER_NAME = "open_ag_runtime"
 
 def run_build(full=False):
     """
-    Cleans local workspace, builds the Docker image, and syncs
-    build artifacts back to the host for local development.
+    Builds the Docker image and syncs artifacts.
+    Smart-cleans only on full-build to save time.
     """
-    # 1. CLEAN: Remove artifacts first so host checks are accurate
-    print("Cleaning host artifacts...")
-    subprocess.run(['sudo', 'rm', '-rf', 'build/', 'install/', 'log/'], check=False)
+    # 1. SMART CLEAN: Only wipe everything if it's a 'full-build'
+    if full:
+        print("FULL BUILD: Purging all host artifacts (build/install/log)...")
+        subprocess.run(['sudo', 'rm', '-rf', 'build/', 'install/', 'log/'], check=False)
+    else:
+        print("fast-build: Keeping existing artifacts for incremental compilation.")
     
-    # 2. IMAGE BUILD: Update the base Docker image
-    print("Building Docker Image...")
+    # 2. IMAGE BUILD: Use cache unless 'full' is specified
+    print(f"Building Docker Image (Cache={'OFF' if full else 'ON'})...")
     build_cmd = ["docker", "build", "-t", IMAGE_NAME, "-f", "docker/Dockerfile", "."]
     if full: 
         build_cmd.insert(2, "--no-cache")
     subprocess.run(build_cmd, check=True)
 
-    # 3. SYNC: Compile code and move artifacts to host
+    # 3. SYNC: Incremental compilation
     print("Syncing build artifacts to host...")
     user_info = f"{os.getuid()}:{os.getgid()}"
     
-    # Determine what to source. Since we just cleaned, this will usually be the Humble base.
+    # Determine setup source
     if not os.path.exists("install/setup.bash"):
         setup_cmd = "source /opt/ros/humble/setup.bash"
     else:
         setup_cmd = "source /opt/ros/humble/setup.bash && source install/setup.bash"
 
-       
-    
-    # We use --entrypoint /bin/bash to STOP the image from 
-    # trying to source the missing install folder on startup.
+    # Single Sync Command
     cmd_sync = [
         "docker", "run", "--rm", 
         "--user", user_info,
-        "--entrypoint", "/bin/bash", # <--- ADD THIS LINE
+        "--entrypoint", "/bin/bash",
         "-v", f"{os.getcwd()}:/workspace", 
         "-w", "/workspace",
-        IMAGE_NAME, "-c",            # <--- CHANGE "bash" TO "-c"
-        f"{setup_cmd} && colcon build --symlink-install --executor sequential"
+        IMAGE_NAME, "-c",            
+        f"{setup_cmd} && colcon build --symlink-install --executor sequential --continue-on-error"
     ]
-    
-    
-    
-    
-    
-    
-    
     
     try:
         subprocess.run(cmd_sync, check=True)
         print("Build and Sync Complete.")
-    except subprocess.CalledProcessError as e:
-        print(f"Build failed. If the error is 'No such file', check the Dockerfile ENTRYPOINT.")
+    except subprocess.CalledProcessError:
+        print(f"Build failed. Check the errors above.")
         sys.exit(1)
-
-
-
-
-
 
 def run_runtime(extra_args):
     """
@@ -84,19 +72,22 @@ def run_runtime(extra_args):
     
     gps_p = ports.get('GPS_PORT', 'virtual')
     mcu_p = ports.get('MCU_PORT', 'virtual')
+    
+    # Logic: Only sim if BOTH are virtual
     is_virtual = (gps_p == 'virtual' and mcu_p == 'virtual')
 
     if not is_virtual:
         print(f"Configuring hardware: GPS={gps_p}, MCU={mcu_p}")
-        subprocess.run(['sudo', 'chmod', '666', gps_p], check=False)
-        subprocess.run(['sudo', 'chmod', '666', mcu_p], check=False)
-        os.system(f"stty -F {mcu_p} 115200 && (echo 's' > {mcu_p} &)")
+        if gps_p.startswith('/dev/'):
+            subprocess.run(['sudo', 'chmod', '666', gps_p], check=False)
+        if mcu_p.startswith('/dev/'):
+            subprocess.run(['sudo', 'chmod', '666', mcu_p], check=False)
+            os.system(f"stty -F {mcu_p} 115200 && (echo 's' > {mcu_p} &)")
 
     subprocess.run(["docker", "rm", "-f", CONTAINER_NAME], capture_output=True)
     
     sim_flag = "sim:=true" if is_virtual else "sim:=false"
     
-    # Check for local install again for the runtime phase
     if not os.path.exists("install/setup.bash"):
         setup_cmd = "source /opt/ros/humble/setup.bash"
     else:
@@ -105,7 +96,7 @@ def run_runtime(extra_args):
     print(f"Launching Runtime | GPS: {gps_p} | MCU: {mcu_p}")
     cmd = [
         "docker", "run", "-it", "--rm", "--name", CONTAINER_NAME,
-        "--entrypoint", "/bin/bash", # Consistent override to prevent startup crashes
+        "--entrypoint", "/bin/bash", 
         "--net=host", "--privileged", "--env-file", ".env",
         "-v", "/dev:/dev", 
         "-v", f"{os.getcwd()}:/workspace",

@@ -46,19 +46,11 @@ def generate_launch_description():
         parameters=[{'use_sim_time': is_sim}]
     ))
 
-    # 3. Conditional Navigation Stack
-    # If GPS is missing, we disable Nav2 to prevent Lifecycle Manager service hangs
+   # 3. Conditional Navigation Stack
     if is_gps_present:
-        ld.add_action(Node(
-            package='nav2_lifecycle_manager', executable='lifecycle_manager',
-            name='lifecycle_manager_navigation', output='screen',
-            parameters=[{
-                'use_sim_time': is_sim,
-                'autostart': True,
-                'node_names': ['controller_server', 'local_costmap_node']
-            }]
-        ))
-
+        # We'll leave Lifecycle Manager commented out as per your request
+        # but keep the controller and costmap active.
+        
         ld.add_action(Node(
             package='nav2_controller', executable='controller_server',
             name='controller_server', output='screen',
@@ -72,14 +64,37 @@ def generate_launch_description():
             parameters=[{'use_sim_time': is_sim}]
         ))
         
-        # GPS Driver
+        
+# --- THE CORRECTED GPS DRIVER BLOCK ---
         config_path = '/workspace/src/ublox/ublox_gps/config/zed_f9p.yaml'
         ld.add_action(Node(
-            package='ublox_gps', executable='ublox_gps_node', name='ublox_gps_node', 
+            package='ublox_gps', executable='ublox_gps_node', 
+            name='ublox_gps_node', 
             output='screen',
-            parameters=[config_path, {'device': gps_port, 'config_on_startup': True}],
+            # Ensures global visibility for the diagnostic script
+            remappings=[
+                ('/ublox_gps_node/fix', '/fix'),
+                ('/ublox_gps_node/navpvt', '/gps/navpvt')
+            ],
+            parameters=[
+                config_path, 
+                {
+                    'device': gps_port, 
+                    'config_on_startup': True,
+                    'tmode3': 0, 
+                    'nav_rate': 5,
+                    # FORCES MESSAGE PUBLICATION
+                    'publish': {
+                        'nav': {'pvt': True, 'pose': True, 'sat': True},
+                        'inf': {'all': True}
+                    },
+                    'load': {'set_all': True, 'initialize': True},
+                    'save': {'mask': 0, 'device': 0}
+                }
+            ],
             respawn=True
         ))
+        
     else:
         ld.add_action(LogInfo(msg="⚠️ NAV STACK DISABLED: Hardware GPS not detected."))
 
@@ -98,7 +113,7 @@ def generate_launch_description():
         output='screen'
     ))
 
-    # 5. Basekit Driver (Handles Sim internal to node)
+    # 5. Basekit Driver
     ld.add_action(Node(
         package='basekit_driver', executable='basekit_driver_node', 
         name='basekit_driver_node', 
