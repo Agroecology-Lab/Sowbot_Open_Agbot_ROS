@@ -3,7 +3,7 @@ import os, subprocess, time, curses, re, sys
 import pymongo
 
 # --- VERSIONING ---
-VERSION = "5.5-STABLE"
+VERSION = "5.6-STABLE"
 
 def get_env_config():
     """Reads hardware ports and mode dynamically from .env."""
@@ -37,22 +37,6 @@ def run_cmd(cmd):
         return subprocess.check_output(full_cmd, shell=True, executable="/bin/bash", stderr=subprocess.DEVNULL).decode().strip()
     except:
         return ""
-
-def check_mongodb_status():
-    try:
-        client = pymongo.MongoClient("localhost", 27017, serverSelectionTimeoutMS=1000)
-        client.server_info()
-        db = client.message_store
-        collection = db["topological_maps"]
-        node_count = collection.count_documents({})
-        client.close()
-        return (True, node_count, "")
-    except Exception as e:
-        return (False, 0, str(e))
-
-def check_topological_topic():
-    topics_list = run_cmd("ros2 topic list")
-    return "/topological_map" in topics_list.split('\n')
 
 def draw(stdscr):
     curses.start_color()
@@ -107,14 +91,13 @@ def draw(stdscr):
             break
 
 if __name__ == "__main__":
-    # Check for 'full' argument
     do_full_sweep = len(sys.argv) > 1 and sys.argv[1].lower() == "full"
 
     try:
         curses.wrapper(draw)
     except KeyboardInterrupt:
         pass
-
+    
     # --- VERBOSE POST-FLIGHT AUDIT ---
     print("\n" + "═"*75)
     print("🔎 VERBOSE ROS 2 GRAPH AUDIT (V{0})".format(VERSION))
@@ -126,10 +109,26 @@ if __name__ == "__main__":
     for node in found_nodes:
         print("\n● {0}".format(node.upper()))
         node_info = run_cmd("ros2 node info {0}".format(node))
-        pubs = re.findall(r'Publishers:(.*?)Service Servers:', node_info, re.S)
-        if pubs:
-            clean_pubs = [p.strip() for p in pubs[0].split('\n') if '/' in p]
-            print("  ├─ Publishers: {0}".format(', '.join(clean_pubs[:4])))
+        
+        # 1. Parse Subscribers (Only if 'full' argument is given)
+        if do_full_sweep:
+            # Look for everything between 'Subscribers:' and 'Publishers:'
+            subs_match = re.search(r'Subscribers:(.*?)Publishers:', node_info, re.S)
+            if subs_match:
+                clean_subs = [s.strip() for s in subs_match.group(1).split('\n') if '/' in s]
+                # Filter out standard internal parameter topics
+                filtered_subs = [s for s in clean_subs if 'parameter' not in s and '/clock' not in s]
+                if filtered_subs:
+                    print("  ├─ Subscribers : {0}".format(', '.join(filtered_subs[:5])))
+                else:
+                    print("  ├─ Subscribers : None (Filtered)")
+
+        # 2. Parse Publishers (Always shown)
+        # Look for everything between 'Publishers:' and 'Service Servers:'
+        pubs_match = re.search(r'Publishers:(.*?)Service Servers:', node_info, re.S)
+        if pubs_match:
+            clean_pubs = [p.strip() for p in pubs_match.group(1).split('\n') if '/' in p]
+            print("  └─ Publishers  : {0}".format(', '.join(clean_pubs[:5])))
 
     # --- OPTIONAL FULL TOPIC SWEEP ---
     if do_full_sweep:
@@ -139,10 +138,8 @@ if __name__ == "__main__":
         
         all_topics = run_cmd("ros2 topic list").split('\n')
         for t in all_topics:
-            if not t or t == "": 
-                continue
+            if not t: continue
             
-            # Using timeout and best_effort QoS to catch GPS data
             cmd = "timeout 1.5s ros2 topic echo {0} --once --no-arr --qos-reliability best_effort".format(t)
             data = run_cmd(cmd)
             
@@ -152,7 +149,7 @@ if __name__ == "__main__":
             else:
                 print("❌ [SILENT] {0:<35} : No Flow (Idle)".format(t))
     else:
-        print("\n💡 Tip: Run './agbot-diagnostic.py full' to scan every topic for live data.")
+        print("\n💡 Tip: Run './agbot-diagnostic.py full' to visualize full Node connections.")
 
     print("\n" + "="*45)
     print("📊 AGBOT POST-FLIGHT SUMMARY")

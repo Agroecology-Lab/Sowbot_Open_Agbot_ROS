@@ -16,7 +16,7 @@ def generate_launch_description():
     gps_port = os.environ.get('GPS_PORT', '/dev/ttyACM0')
     
     return LaunchDescription([
-        # --- SECTION 1: INFRASTRUCTURE ---
+       # --- SECTION 1: INFRASTRUCTURE ---
         Node(
             package='rosbridge_server', 
             executable='rosbridge_websocket', 
@@ -37,7 +37,14 @@ def generate_launch_description():
             arguments=['0', '0', '0', '0', '0', '0', 'odom', 'base_link'],
             output='screen'
         ),
-
+        # This fixes the "topological_map frame does not exist" error
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='static_map_to_topological',
+            arguments=['0', '0', '0', '0', '0', '0', 'map', 'topological_map'],
+            output='screen'
+        ),
         # --- SECTION 2: NAV2 BACK-END (Lifecycle Managed) ---
         Node(
             package='nav2_map_server',

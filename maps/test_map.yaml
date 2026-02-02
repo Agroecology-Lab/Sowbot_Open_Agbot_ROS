@@ -1,41 +1,37 @@
-name: "agbot_field"
-metric_map: "agbot_field"
-pointset: "agbot_fields"
-meta:
-  map: "agbot_field"
-  pointset: "agbot_fields"
+name: "test_map"
+metric_map: "nav2_test_map"
+pointset: "test_points"
 transformation:
   parent: "map"
-  child: "base_link"
-  header:
-    frame_id: "map"
-    stamp: {nanosec: 0, sec: 0}
-  rotation: {w: 1.0, x: 0.0, y: 0.0, z: 0.0}
+  child: "topological_map"
   translation: {x: 0.0, y: 0.0, z: 0.0}
+  rotation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}
 nodes:
   - meta:
-      map: "agbot_field"
-      pointset: "agbot_fields"
+      pointset: "test_points"
     node:
       name: "waypoint_1"
-      map: "agbot_field"
-      pointset: "agbot_fields"
-      localise_by_topic: "" # <--- Added this to stop the KeyError
-      meta:
-        map: "agbot_field"
-        pointset: "agbot_fields"
       pose:
         position: {x: 0.0, y: 0.0, z: 0.0}
-        orientation: {w: 1.0, x: 0.0, y: 0.0, z: 0.0}
-      edges: []
-      verts:
-        - {x: 0.5, y: 0.5}
-        - {x: -0.5, y: 0.5}
-        - {x: -0.5, y: -0.5}
-        - {x: 0.5, y: -0.5}
+        orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}
+      verts: [{x: 0.5, y: 0.5}, {x: -0.5, y: 0.5}, {x: -0.5, y: -0.5}, {x: 0.5, y: -0.5}]
+      edges: [{edge_id: "w1_to_w2", node: "waypoint_2", action: "nav2_navfn_planner/NavfnPlanner"}]
       properties:
         xy_goal_tolerance: 0.3
         yaw_goal_tolerance: 0.1
-      rc_extra_config: ""
-      recovery_behaviours_config: ""
-      restriction_area: ""
+      localise_by_topic: ""
+      recovery_behaviours_config: []
+  - meta:
+      pointset: "test_points"
+    node:
+      name: "waypoint_2"
+      pose:
+        position: {x: 2.0, y: 0.0, z: 0.0}
+        orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}
+      verts: [{x: 2.5, y: 0.5}, {x: 1.5, y: 0.5}, {x: 1.5, y: -0.5}, {x: 2.5, y: -0.5}]
+      edges: [{edge_id: "w2_to_w1", node: "waypoint_1", action: "nav2_navfn_planner/NavfnPlanner"}]
+      properties:
+        xy_goal_tolerance: 0.3
+        yaw_goal_tolerance: 0.1
+      localise_by_topic: ""
+      recovery_behaviours_config: []
