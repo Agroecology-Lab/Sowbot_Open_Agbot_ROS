@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Graph Explorer</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <h1>Graph Explorer</h1>
+    <div id="meta">waiting for data…</div>
+    <div id="status">initializing…</div>
+    <button id="refreshBtn" type="button">Refresh now</button>
+    <button
+      id="settingsBtn"
+      class="icon-button"
+      type="button"
+      aria-haspopup="dialog"
+      aria-controls="settingsOverlay"
+      aria-expanded="false"
+      title="Open settings"
+    >
+      &#9881;
+    </button>
+  </header>
+  <div id="canvasContainer">
+    <canvas id="graphCanvas"></canvas>
+    <canvas id="overlayCanvas"></canvas>
+    <div id="contextMenu" class="hidden"></div>
+  </div>
+  <div id="settingsOverlay" class="settings-overlay" aria-hidden="true">
+    <div
+      id="settingsOverlayDialog"
+      class="settings-overlay__panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settingsOverlayTitle"
+      tabindex="-1"
+    >
+      <header class="settings-overlay__header">
+        <h2 id="settingsOverlayTitle" class="settings-overlay__title">Settings</h2>
+        <button
+          id="settingsOverlayClose"
+          class="settings-overlay__close icon-button"
+          type="button"
+          aria-label="Close settings"
+        >
+          &times;
+        </button>
+      </header>
+      <div id="settingsOverlayBody" class="settings-overlay__body"></div>
+      </div>
+    </div>
+  </div>
+  <div id="parameterEditor" class="parameter-editor hidden" aria-hidden="true">
+    <div class="parameter-editor__backdrop"></div>
+    <form id="parameterEditorForm" class="parameter-editor__dialog" role="dialog" aria-modal="true" aria-labelledby="parameterEditorTitle">
+      <header class="parameter-editor__header">
+        <div>
+          <h2 id="parameterEditorTitle">Parameter</h2>
+          <p id="parameterEditorSubtitle" class="parameter-editor__subtitle"></p>
+        </div>
+        <button type="button" id="parameterEditorClose" class="parameter-editor__icon-btn" aria-label="Close parameter editor">×</button>
+      </header>
+      <section id="parameterEditorBody" class="parameter-editor__body"></section>
+      <footer class="parameter-editor__footer">
+        <div id="parameterEditorMessage" class="parameter-editor__message"></div>
+        <div class="parameter-editor__actions">
+          <button type="submit" id="parameterEditorApply">Apply</button>
+          <button type="button" id="parameterEditorCancel" class="secondary">Cancel</button>
+        </div>
+      </footer>
+    </form>
+  </div>
+  <div id="serviceCaller" class="parameter-editor hidden" aria-hidden="true">
+    <div class="parameter-editor__backdrop"></div>
+    <form id="serviceCallerForm" class="parameter-editor__dialog" role="dialog" aria-modal="true" aria-labelledby="serviceCallerTitle">
+      <header class="parameter-editor__header">
+        <div>
+          <h2 id="serviceCallerTitle">Service</h2>
+          <p id="serviceCallerSubtitle" class="parameter-editor__subtitle"></p>
+        </div>
+        <button type="button" id="serviceCallerClose" class="parameter-editor__icon-btn" aria-label="Close service caller">×</button>
+      </header>
+      <section id="serviceCallerBody" class="parameter-editor__body"></section>
+      <section id="serviceCallerExample" class="parameter-editor__response hidden" aria-live="polite">
+        <h3>Example Request</h3>
+        <pre id="serviceCallerExampleText"></pre>
+      </section>
+      <section id="serviceCallerResponse" class="parameter-editor__response hidden" aria-live="polite">
+        <h3>Last Response</h3>
+        <pre id="serviceCallerResponseText"></pre>
+      </section>
+      <footer class="parameter-editor__footer">
+        <div id="serviceCallerMessage" class="parameter-editor__message"></div>
+        <div class="parameter-editor__actions">
+          <button type="submit" id="serviceCallerInvoke">Call</button>
+          <button type="button" id="serviceCallerCancel" class="secondary">Cancel</button>
+        </div>
+      </footer>
+    </form>
+  </div>
+  <div id="footer">Data source: /graph endpoint (refresh every 2s)</div>
+  <script src="/js/main.js" type="module"></script>
+</body>
+</html>
