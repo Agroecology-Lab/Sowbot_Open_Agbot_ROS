@@ -48,7 +48,7 @@ Ratings scale from 0.1 (Conceptual) to 1.0 (Production-Ready), with 0.0 indicati
 | **0.3** | **[Topological Navigation](https://github.com/LCAS/topological_navigation)** | Integration of the LCAS topological framework for graph-based semantic waypoint navigation. |
 | **0.0** | **[Visual Crop-Row Navigation](https://github.com/Agroecology-Lab/visual-multi-crop-row-navigation/tree/ROS2)** | Vision-based guidance system for following crop rows; currently in porting status for ROS 2. |
 | **0.0** | **[Vizanti Web Visualisation](https://github.com/MoffKalast/vizanti/tree/ros2)** | Planned integration of a web-based mission planner and 3D visualiser for remote operations.|
-| **0.0** | **['Qwicc hitch for AgBots](https://manaculture.ca/en/a-frame-quick-hitch/)** | Develop & Test triangular qwick hitch system for AgBots  |
+| **0.0** | **[Quick hitch for AgBots](https://manaculture.ca/en/a-frame-quick-hitch/)** | Develop & Test triangular quick (qwicc?) hitch system for AgBots  |
 | **0.0** | **[Delta robot module for precision sowing or weeding](https://github.com/Agroecology-Lab/Open-Weeding-Delta/tree/master/hardware#readme)** | Develop & Test Delta module |
 | **0.0** | **[L&ASER weeding module](https://github.com/Laudando-Associates-LLC/LASER)** | Intgrate and validate Laudando laser weeding on Sowbot |
 
