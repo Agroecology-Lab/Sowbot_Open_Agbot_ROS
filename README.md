@@ -1,3 +1,13 @@
+# ⚠️ ARCHIVED / REPLACED
+**This repository has been succeeded by the Jazzy-native Feldfreund Devkit.**
+
+For the latest features, ROS 2 Jazzy support, and the new hardware abstraction layer, please move to:
+👉 **[Feldfreund Devkit - Jazzy Branch](https://github.com/Agroecology-Lab/feldfreund_devkit_ros/tree/jazzy)**
+
+---
+
+This repo holds a legacy humble robot. In /main is a minimal version, in /dev a version that brings up Nav2 and Topological nav
+
 # Open AgBot DevKit (ROS 2)
 
 An open-source, containerised ROS 2 stack for autonomous agricultural robotics. This repository provides the drivers and orchestration for the Open AgBot platform, featuring RTK-GNSS localization and ESP32-based hardware control.
