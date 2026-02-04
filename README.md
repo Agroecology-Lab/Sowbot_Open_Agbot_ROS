@@ -8,13 +8,12 @@ For the latest features, ROS 2 Jazzy support, and the new hardware abstraction l
 
 This repo holds a legacy humble robot. In /main is a minimal version, in /dev a version that brings up Nav2 and Topological nav
 
-# Open AgBot DevKit (ROS 2)
+# Open AgBot DevKit Humble (ROS 2)
 
 An open-source, containerised ROS 2 stack for autonomous agricultural robotics. This repository provides the drivers and orchestration for the Open AgBot platform, featuring RTK-GNSS localization and ESP32-based hardware control.
 
 Development is led by the <a href="https://agroecologylab.org.uk" target="_blank">Agroecology Lab </a> building on the core developed by <a href="https://github.com/zauberzeug/" target="_blank">Zauberzeug</a> 
 
-(Latest work with Topological Nav is in the /dev branch, but under heavy development)
 ---
 
 ## Quick Start
