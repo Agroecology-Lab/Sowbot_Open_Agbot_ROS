@@ -2,7 +2,7 @@
 **This repository has been succeeded by the Jazzy-native Feldfreund Devkit.**
 
 For the latest features, ROS 2 Jazzy support, and the new hardware abstraction layer, please move to:
-👉 **[Feldfreund Devkit - Jazzy Branch](https://github.com/Agroecology-Lab/feldfreund_devkit_ros/tree/jazzy)**
+👉 **[Feldfreund Devkit - Sowbot branch](https://github.com/Agroecology-Lab/feldfreund_devkit_ros)**
 
 ---
 
